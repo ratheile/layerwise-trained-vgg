@@ -1,11 +1,8 @@
 #%%
 from networks import AutoencoderNet
-from loaders import MnistLoader
 
-loader = MnistLoader(
+net = AutoencoderNet(
   '/home/shafall/datasets/mnist',
-  download=False
 )
-net = AutoencoderNet(loader)
-net.train()
+net.train_test()
 net.save()

@@ -1,2 +1,2 @@
-from .mnist import MnistLoader
-__all__ = ('MnistLoader')
+from .mnist import MnistLoader, SetType
+__all__ = ('MnistLoader', 'SetType')

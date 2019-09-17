@@ -40,7 +40,8 @@ class Autoencoder(nn.Module):
       nn.BatchNorm2d(num_features=8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
       nn.ReLU(True),
       nn.MaxPool2d(kernel_size=2),  
-      nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1, padding=1),       nn.BatchNorm2d(num_features=16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1, padding=1), 
+      nn.BatchNorm2d(num_features=16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
       nn.ReLU(True),
       nn.MaxPool2d(kernel_size=2)   
     )
