@@ -9,3 +9,5 @@ Layered Neural Network
   - Random Matrix
   - Test decoding Layers
 - CIFAR10 
+
+kaan

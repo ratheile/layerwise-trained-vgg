@@ -25,10 +25,11 @@ class AutoencoderNet():
   num_epochs = 100
   device = 'cpu'
   test_losses = []
+  test_accs = []
 
   def __init__(self, mnist_path):
-    self.test_loader = MnistLoader(mnist_path, download=True, type=SetType.TEST)
-    self.train_loader = MnistLoader(mnist_path, download=True, type=SetType.TRAIN)
+    self.test_loader = MnistLoader(mnist_path, download=True, type=SetType.TEST, batch_size=1000)
+    self.train_loader = MnistLoader(mnist_path, download=True, type=SetType.TRAIN, batch_size=128)
 
     self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     self.model = SupervisedAutoencoder().to(self.device)
@@ -54,55 +55,43 @@ class AutoencoderNet():
 
   def to_img(self, x):
     x = 0.5 * (x + 1)
-    x = x.clamp(0, 1)
-    x = x.view(x.size(0), 1, 28, 28)
+    x = np.clip(x, 0, 1)
     return x
-  
-  def plot_tensor(self, img):
-    np_img = img.cpu().numpy()[0]
-    np_img = np.transpose(np_img, (1,2,0)) 
-    plt.imshow(np_img.squeeze())
-    plt.show()
 
-
-  def save_tensor(self, real_imgs, dc_imgs):
-    real_imgs = real_imgs[:5,:,:,:]
-    dc_imgs = dc_imgs[:5,:,:,:]
-    fig, axes = plt.subplots(nrows=2, ncols=5, sharex=True, sharey=True, figsize=(25,4))
+  def plot_img(self, real_imgs, dc_imgs, epoch):
+    real_imgs = real_imgs[:10,:,:,:]
+    dc_imgs = dc_imgs[:10,:,:,:]
+    fig, axes = plt.subplots(nrows=2, ncols=10, sharex=True, sharey=True, figsize=(25,4))
 
     for imgs, row in zip([real_imgs, dc_imgs], axes):
       for img, ax in zip(imgs, row):
-        image = np.squeeze(img)
+        image = np.squeeze(self.to_img(img))
         ax.imshow(image, cmap='gray')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
 
-    plt.savefig("DecodedImgs.png")
+    plt.savefig("DecodedImgs" + str(epoch))
 
   def train(self, epoch):
-    for data in self.test_loader:
-      img, labels = data
-      img = Variable(img)
+    self.model.train()
+    for data in self.train_loader:
+      img, label = data[0], data[1]
+      dev_img, dev_label = img.to(self.device), label.to(self.device)
       # ===================forward=====================
-      dev_img = img.to(self.device)
-      dev_labels = labels.to(self.device)
-
       decoding, prediction = self.model(dev_img)
       loss_dc = self.decoding_criterion(decoding, dev_img)
-      loss_pred = self.pred_criterion(prediction, dev_labels)
-      
+      loss_pred = self.pred_criterion(prediction, dev_label)
       combo_loss = loss_dc + loss_pred
       # ===================backward====================
       self.optimizer.zero_grad()
       combo_loss.backward()
       self.optimizer.step()
     # ===================log========================
-    # calculate Accuracy
+    # Calculate Accuracy
     _, predicted = torch_max(prediction.data, 1)
-    accuracy = (predicted.cpu().numpy() == labels.numpy()) \
-      .sum() / len(labels)
+    accuracy = (predicted.cpu().numpy() == label.numpy()).sum() / len(label)
 
-    print('epoch [{}/{}], loss:{:.4f}, acc:{:.4f}'
+    print('Epoch [{}/{}]\nTrain Loss: {:.4f}      Train Acc: {:.4f}'
       .format(
           epoch+1,
           self.num_epochs, 
@@ -110,41 +99,45 @@ class AutoencoderNet():
           accuracy
         )
       )
-
-    # self.plot_tensor(img)
-    # self.plot_tensor(decoding.detach())
-
-    if epoch % 10 == 0:
-      pic = self.to_img(decoding.cpu().data)
-      save_image(pic, './dc_img/image_{}.png'.format(epoch))
     
   def test(self, epoch):
     self.model.eval()
     test_loss = 0
+    test_acc = 0
 
     with torch.no_grad():
+      img: Tensor = None
+      labels: Tensor = None
       for data in self.test_loader:
-        imgs, labels = data[0].to(self.device), data[1].to(self.device)
+        img, label = data[0], data[1]
+        dev_img, dev_label = img.to(self.device), label.to(self.device)
         # ===================Forward=====================
-        decoding, prediction = self.model(imgs)
-        test_loss += self.decoding_criterion(decoding, imgs).item()
-
-      if epoch % 1 == 0:
-        self.save_tensor(real_imgs=imgs.cpu().numpy(), dc_imgs=decoding.detach().cpu().numpy())
+        decoding, prediction = self.model(dev_img)
+        loss_dc = self.decoding_criterion(decoding, dev_img)
+        loss_pred = self.pred_criterion(prediction, dev_label)
+        combo_loss = loss_dc + 0.5*loss_pred
+        # Calculate Test Loss
+        test_loss += combo_loss.item()
+        # Calculate Accuracy
+        _, predicted = torch_max(prediction.data, 1)
+        test_acc += (predicted.cpu().numpy() == label.numpy()).sum() / len(label)
 
     test_loss /= 10
+    test_acc /= 10
     self.test_losses.append(test_loss)
+    self.test_accs.append(test_acc)
 
-    print('Epoch [{}/{}], Test Loss:{:.4f}'
+    print('Test Loss:  {:.4f}      Test Acc:  {:.4f}\n'
       .format(
-        epoch+1,
-        self.num_epochs,
-        test_loss
+        test_loss,
+        test_acc
       )
     )
+
+    if epoch % 5 == 0:
+      self.plot_img(real_imgs=img.numpy(), dc_imgs=decoding.cpu().detach().numpy(), epoch=epoch)
 
   def train_test(self):
     for epoch in range(self.num_epochs):
       self.train(epoch)
       self.test(epoch)
-      
