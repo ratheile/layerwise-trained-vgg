@@ -1,11 +1,11 @@
 from modules import Autoencoder, OriginalAutoencoder, SupervisedAutoencoder
-from loaders import MnistLoader,SetType 
+from loaders import semi_supervised_mnist
 
 import torch
 from torch.autograd import Variable
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader
-from torch import nn 
+from torch import nn, Tensor 
 from torch import save as torch_save
 from torch import max as torch_max
 from torch.optim import Adam
@@ -19,8 +19,10 @@ import matplotlib.pyplot as plt
 
 class AutoencoderNet():
 
+  supervised_loader: DataLoader = None
+  unsupvised_loader: DataLoader = None
   test_loader: DataLoader = None
-  train_loader: DataLoader = None
+
   learning_rate = 1e-3
   num_epochs = 100
   device = 'cpu'
@@ -28,10 +30,12 @@ class AutoencoderNet():
   test_accs = []
 
   def __init__(self, mnist_path):
-    self.test_loader = MnistLoader(mnist_path, download=True, type=SetType.TEST, batch_size=1000)
-    self.train_loader = MnistLoader(mnist_path, download=True, type=SetType.TRAIN, batch_size=128)
+    self.supervised_loader, self.unsupvised_loader,\
+    self.test_loader = semi_supervised_mnist(
+      mnist_path, supervised_ratio=0.1, batch_size=1000
+    )
 
-    self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     self.model = SupervisedAutoencoder().to(self.device)
 
     summary(self.model, input_size=(1,28,28))
@@ -74,7 +78,7 @@ class AutoencoderNet():
 
   def train(self, epoch):
     self.model.train()
-    for data in self.train_loader:
+    for data in self.supervised_loader:
       img, label = data[0], data[1]
       dev_img, dev_label = img.to(self.device), label.to(self.device)
       # ===================forward=====================
