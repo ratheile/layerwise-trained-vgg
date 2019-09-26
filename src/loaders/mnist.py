@@ -58,12 +58,12 @@ def semi_supervised_mnist(
 
   unsupvised_loader = DataLoader(mnist_train, 
     sampler=unsupvised_sampler,
-    batch_size=batch_size
+    batch_size=int(batch_size - (batch_size * supervised_ratio))
   )
 
   supervised_loader = DataLoader(mnist_train, 
     sampler=supervised_sampler,
-    batch_size=batch_size
+    batch_size=int(batch_size * supervised_ratio)
   )
 
   test_loader = DataLoader(mnist_test, 

@@ -6,6 +6,7 @@ from torch.autograd import Variable
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader
 from torch import nn, Tensor 
+from torch import cat as torch_cat
 from torch import save as torch_save
 from torch import max as torch_max
 from torch.optim import Adam
@@ -34,6 +35,8 @@ class AutoencoderNet():
     self.test_loader = semi_supervised_mnist(
       mnist_path, supervised_ratio=0.1, batch_size=1000
     )
+
+    assert len(self.supervised_loader) == len(self.unsupvised_loader)
 
     self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     self.model = SupervisedAutoencoder().to(self.device)
@@ -78,22 +81,39 @@ class AutoencoderNet():
 
   def train(self, epoch):
     self.model.train()
-    for data in self.supervised_loader:
-      img, label = data[0], data[1]
-      dev_img, dev_label = img.to(self.device), label.to(self.device)
-      # ===================forward=====================
-      decoding, prediction = self.model(dev_img)
-      loss_dc = self.decoding_criterion(decoding, dev_img)
+    for ith_batch in range(len(self.unsupvised_loader)):
+
+      # _s means supervised _us unsupervised
+      iter_us = iter(self.unsupvised_loader)
+      iter_s = iter(self.supervised_loader)
+
+      img_us, _ = (lambda d: (d[0], d[1]))(next(iter_us))
+      img_s, label_s = (lambda d: (d[0], d[1]))(next(iter_s))
+
+      # copy all vars to device
+      dev_img_us = img_us.to(self.device)
+      dev_img_s = img_s.to(self.device)
+      dev_label = label_s.to(self.device)
+      
+      decoding_s, prediction = self.model(dev_img_s)
+      decoding_us, _ = self.model(dev_img_us)
+
+      loss_dc_s = self.decoding_criterion(decoding_s, dev_img_s)
+      loss_dc_us = self.decoding_criterion(decoding_us, dev_img_us)
+
       loss_pred = self.pred_criterion(prediction, dev_label)
-      combo_loss = loss_dc + loss_pred
+
+      combo_loss = loss_dc_s + loss_dc_us + loss_pred
+
       # ===================backward====================
       self.optimizer.zero_grad()
       combo_loss.backward()
       self.optimizer.step()
+
     # ===================log========================
     # Calculate Accuracy
     _, predicted = torch_max(prediction.data, 1)
-    accuracy = (predicted.cpu().numpy() == label.numpy()).sum() / len(label)
+    accuracy = (predicted.cpu().numpy() == label_s.numpy()).sum() / len(label_s)
 
     print('Epoch [{}/{}]\nTrain Loss: {:.4f}      Train Acc: {:.4f}'
       .format(
