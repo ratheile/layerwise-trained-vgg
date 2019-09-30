@@ -28,7 +28,7 @@ class OriginalAutoencoder(nn.Module):
     return x
 
 class Autoencoder(nn.Module):
-  def __init__(self):
+  def __init__(self, color_channels=1):
     super().__init__()
 
     # Conv2d:      b,1,28,28   -->  b,8,28,28
@@ -36,12 +36,12 @@ class Autoencoder(nn.Module):
     # Conv2d:      b,8,14,14   -->  b,16,14,14
     # MaxPool2d:   b,16,14,14  -->  b,16,7,7
     self.encoder = nn.Sequential(
-      nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=1, padding=1),   
-      nn.BatchNorm2d(num_features=8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.Conv2d(in_channels=color_channels, out_channels=color_channels*8, kernel_size=3, stride=1, padding=1),   
+      nn.BatchNorm2d(num_features=color_channels*8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
       nn.ReLU(True),
       nn.MaxPool2d(kernel_size=2),  
-      nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1, padding=1), 
-      nn.BatchNorm2d(num_features=16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.Conv2d(in_channels=color_channels*8, out_channels=color_channels*16, kernel_size=3, stride=1, padding=1), 
+      nn.BatchNorm2d(num_features=color_channels*16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
       nn.ReLU(True),
       nn.MaxPool2d(kernel_size=2)   
     )
@@ -52,12 +52,12 @@ class Autoencoder(nn.Module):
     # Conv2d:       b,16,14,14  -->  b,8,14,14
     self.decoder = nn.Sequential(
       Interpolate(),                
-      nn.Conv2d(in_channels=16, out_channels=8, kernel_size=3, stride=1, padding=1),       
-      nn.BatchNorm2d(num_features=8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.Conv2d(in_channels=color_channels*16, out_channels=color_channels*8, kernel_size=3, stride=1, padding=1),       
+      nn.BatchNorm2d(num_features=color_channels*8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
       nn.ReLU(True),
       Interpolate(),                
-      nn.Conv2d(in_channels=8, out_channels=1, kernel_size=3, stride=1, padding=1),   
-      nn.BatchNorm2d(num_features=1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.Conv2d(in_channels=color_channels*8, out_channels=color_channels*1, kernel_size=3, stride=1, padding=1),   
+      nn.BatchNorm2d(num_features=color_channels*1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
       nn.Tanh()
     )
 
@@ -68,10 +68,10 @@ class Autoencoder(nn.Module):
   
 
 class SupervisedAutoencoder(Autoencoder):
-  def __init__(self):
-    super().__init__()
+  def __init__(self, color_channels):
+    super().__init__(color_channels=color_channels)
 
-    fc_layer_size = 16*7*7
+    fc_layer_size = 16*8*8*color_channels
     self.supervision = nn.Sequential(
       FCView(),
       nn.Linear(in_features=fc_layer_size, out_features=100),

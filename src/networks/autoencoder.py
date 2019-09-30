@@ -31,17 +31,21 @@ class AutoencoderNet():
   test_accs = []
 
   def __init__(self, mnist_path, ):
+
+    #TODO: automatically fill these variables
+    color_channels=3
+    img_size=32
     self.supervised_loader, self.unsupvised_loader,\
     self.test_loader = semi_supervised_cifar10(
-      mnist_path, supervised_ratio=0.1, batch_size=1000
+      mnist_path, supervised_ratio=0.1, batch_size=100
     )
 
     assert len(self.supervised_loader) == len(self.unsupvised_loader)
 
     self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    self.model = SupervisedAutoencoder().to(self.device)
+    self.model = SupervisedAutoencoder(color_channels=3).to(self.device)
 
-    summary(self.model, input_size=(1,28,28))
+    summary(self.model, input_size=(color_channels,img_size,img_size))
 
     if not os.path.exists('./dc_img'):
         os.mkdir('./dc_img')
