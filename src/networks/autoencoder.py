@@ -1,5 +1,5 @@
 from modules import Autoencoder, OriginalAutoencoder, SupervisedAutoencoder
-from loaders import semi_supervised_mnist
+from loaders import semi_supervised_mnist, semi_supervised_cifar10
 
 import torch
 from torch.autograd import Variable
@@ -30,9 +30,9 @@ class AutoencoderNet():
   test_losses = []
   test_accs = []
 
-  def __init__(self, mnist_path):
+  def __init__(self, mnist_path, ):
     self.supervised_loader, self.unsupvised_loader,\
-    self.test_loader = semi_supervised_mnist(
+    self.test_loader = semi_supervised_cifar10(
       mnist_path, supervised_ratio=0.1, batch_size=1000
     )
 
@@ -53,6 +53,7 @@ class AutoencoderNet():
       lr=self.learning_rate, 
       weight_decay=1e-5
     )
+
 
   def save(self):
     torch_save(
