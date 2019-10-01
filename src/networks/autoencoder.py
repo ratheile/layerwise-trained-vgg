@@ -11,9 +11,12 @@ from torch import save as torch_save
 from torch import max as torch_max
 from torch.optim import Adam
 
+#logging
+from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
 
 import os
+import io
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,6 +26,7 @@ class AutoencoderNet():
   supervised_loader: DataLoader = None
   unsupvised_loader: DataLoader = None
   test_loader: DataLoader = None
+  writer:SummaryWriter = None
 
   learning_rate = 1e-3
   num_epochs = 100
@@ -37,7 +41,7 @@ class AutoencoderNet():
     img_size=32
     self.supervised_loader, self.unsupvised_loader,\
     self.test_loader = semi_supervised_cifar10(
-      mnist_path, supervised_ratio=0.1, batch_size=100
+      mnist_path, supervised_ratio=0.1, batch_size=1000
     )
 
     assert len(self.supervised_loader) == len(self.unsupvised_loader)
@@ -45,6 +49,7 @@ class AutoencoderNet():
     self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     self.model = SupervisedAutoencoder(color_channels=3).to(self.device)
 
+    self.writer = SummaryWriter()
     summary(self.model, input_size=(color_channels,img_size,img_size))
 
     if not os.path.exists('./dc_img'):
@@ -77,12 +82,19 @@ class AutoencoderNet():
 
     for imgs, row in zip([real_imgs, dc_imgs], axes):
       for img, ax in zip(imgs, row):
-        image = np.squeeze(self.to_img(img))
+        if img.shape[0] == 1:
+          image = np.squeeze(self.to_img(img))
+        elif img.shape[0] == 3:
+          image = self.to_img(img).swapaxes(0,2).swapaxes(0,1)
+        else:
+          raise "Image dimensions do not match (1/3)"
+    
         ax.imshow(image, cmap='gray')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
 
-    plt.savefig("DecodedImgs" + str(epoch))
+
+    self.writer.add_figure('DecodedImgs', fig)
 
   def train(self, epoch):
     self.model.train()
@@ -129,6 +141,9 @@ class AutoencoderNet():
         )
       )
     
+    self.writer.add_scalar('Train Loss', combo_loss.item())
+    self.writer.add_scalar('Train Accuracy', accuracy)
+    
   def test(self, epoch):
     self.model.eval()
     test_loss = 0
@@ -162,6 +177,9 @@ class AutoencoderNet():
         test_acc
       )
     )
+
+    self.writer.add_scalar('Test Loss', test_loss)
+    self.writer.add_scalar('Test Accuracy', test_acc)
 
     if epoch % 5 == 0:
       self.plot_img(real_imgs=img.numpy(), dc_imgs=decoding.cpu().detach().numpy(), epoch=epoch)
