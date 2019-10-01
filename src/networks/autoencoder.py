@@ -1,4 +1,6 @@
-from modules import Autoencoder, OriginalAutoencoder, SupervisedAutoencoder
+from modules import Autoencoder, OriginalAutoencoder, \
+  SupervisedAutoencoder, StackableNetwork, NetworkStack
+
 from loaders import semi_supervised_mnist, semi_supervised_cifar10
 
 import torch
@@ -47,7 +49,11 @@ class AutoencoderNet():
     assert len(self.supervised_loader) == len(self.unsupvised_loader)
 
     self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    self.model = SupervisedAutoencoder(color_channels=3).to(self.device)
+
+
+    self.model_l1 = SupervisedAutoencoder(color_channels=3).to(self.device)
+    self.model_l2 = SupervisedAutoencoder(color_channels=3).to(self.device)
+    self.stack = NetworkStack([self.model_l1, self.model_l2]).to(self.device)
 
     self.writer = SummaryWriter()
     summary(self.model, input_size=(color_channels,img_size,img_size))
@@ -94,7 +100,7 @@ class AutoencoderNet():
         ax.get_yaxis().set_visible(False)
 
 
-    self.writer.add_figure('DecodedImgs', fig)
+    self.writer.add_figure('DecodedImgs', fig, global_step=epoch)
 
   def train(self, epoch):
     self.model.train()
@@ -141,8 +147,8 @@ class AutoencoderNet():
         )
       )
     
-    self.writer.add_scalar('Train Loss', combo_loss.item())
-    self.writer.add_scalar('Train Accuracy', accuracy)
+    self.writer.add_scalar('Train Loss', combo_loss.item(), global_step=epoch)
+    self.writer.add_scalar('Train Accuracy', accuracy, global_step=epoch)
     
   def test(self, epoch):
     self.model.eval()
@@ -159,15 +165,13 @@ class AutoencoderNet():
         decoding, prediction = self.model(dev_img)
         loss_dc = self.decoding_criterion(decoding, dev_img)
         loss_pred = self.pred_criterion(prediction, dev_label)
-        combo_loss = loss_dc + 0.5*loss_pred
+        combo_loss = loss_dc + 0.5 * loss_pred
         # Calculate Test Loss
-        test_loss += combo_loss.item()
+        test_loss += combo_loss.item() / (len(self.test_loader))
         # Calculate Accuracy
         _, predicted = torch_max(prediction.data, 1)
-        test_acc += (predicted.cpu().numpy() == label.numpy()).sum() / len(label)
+        test_acc += (predicted.cpu().numpy() == label.numpy()).sum() / (len(self.test_loader) * len(label))
 
-    test_loss /= 10
-    test_acc /= 10
     self.test_losses.append(test_loss)
     self.test_accs.append(test_acc)
 
@@ -178,8 +182,8 @@ class AutoencoderNet():
       )
     )
 
-    self.writer.add_scalar('Test Loss', test_loss)
-    self.writer.add_scalar('Test Accuracy', test_acc)
+    self.writer.add_scalar('Test Loss', test_loss, global_step=epoch)
+    self.writer.add_scalar('Test Accuracy', test_acc, global_step=epoch)
 
     if epoch % 5 == 0:
       self.plot_img(real_imgs=img.numpy(), dc_imgs=decoding.cpu().detach().numpy(), epoch=epoch)
