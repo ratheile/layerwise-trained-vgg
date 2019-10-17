@@ -23,6 +23,12 @@ import io
 import numpy as np
 import matplotlib.pyplot as plt
 
+@dataclass
+class LayerTrainingDefinition:
+  num_epochs: int = 100
+  model: NetworkStack = None
+
+
 class AutoencoderNet():
 
   supervised_loader: DataLoader = None
@@ -36,27 +42,34 @@ class AutoencoderNet():
   test_losses = []
   test_accs = []
 
-  def __init__(self, mnist_path, ):
+  def __init__(self, data_path, ):
 
     #TODO: automatically fill these variables
     color_channels=3
     img_size=32
     self.supervised_loader, self.unsupvised_loader,\
     self.test_loader = semi_supervised_cifar10(
-      mnist_path, supervised_ratio=0.1, batch_size=1000
+      data_path, supervised_ratio=0.1, batch_size=1000
     )
 
     assert len(self.supervised_loader) == len(self.unsupvised_loader)
 
-    self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model_l1 = SupervisedAutoencoder(color_channels=3).to(self.device)
+    model_l2 = SupervisedAutoencoder(color_channels=3).to(self.device)
 
+    model_t1 = NetworkStack([self.model_l1]).to(self.device)
+    model_t2 = NetworkStack([self.model_l1, self.model_l2]).to(self.device)
 
-    self.model_l1 = SupervisedAutoencoder(color_channels=3).to(self.device)
-    self.model_l2 = SupervisedAutoencoder(color_channels=3).to(self.device)
-    self.stack = NetworkStack([self.model_l1, self.model_l2]).to(self.device)
+    layer_configs = [
+      LayerTrainingDefinition(num_epochs=100, model=model_t1),
+      LayerTrainingDefinition(num_epochs=100, model=model_t2)
+    ]
 
+    """
     self.writer = SummaryWriter()
     summary(self.model, input_size=(color_channels,img_size,img_size))
+    """
 
     if not os.path.exists('./dc_img'):
         os.mkdir('./dc_img')
@@ -102,7 +115,7 @@ class AutoencoderNet():
 
     self.writer.add_figure('DecodedImgs', fig, global_step=epoch)
 
-  def train(self, epoch):
+  def train(self, epoch, config: LayerTrainingDefinition):
     self.model.train()
     for ith_batch in range(len(self.unsupvised_loader)):
 
@@ -188,7 +201,10 @@ class AutoencoderNet():
     if epoch % 5 == 0:
       self.plot_img(real_imgs=img.numpy(), dc_imgs=decoding.cpu().detach().numpy(), epoch=epoch)
 
-  def train_test(self):
-    for epoch in range(self.num_epochs):
-      self.train(epoch)
-      self.test(epoch)
+  def train_test(self, num_layers):
+    for config in layer_configs:
+      self.model.networks = self.model.networks[:layer]
+      for epoch in range(layer_configs.num_epochs):
+        self.train(epoch, config)
+        self.test(epoch, config)
+    

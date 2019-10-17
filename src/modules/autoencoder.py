@@ -4,35 +4,13 @@ from .interpolate import Interpolate
 from .fcview import FCView
 from typing import List
 
-class OriginalAutoencoder(nn.Module):
-  def __init__(self):
-    super().__init__()
-    self.encoder = nn.Sequential(
-      nn.Conv2d(1, 16, 3, stride=3, padding=1),  # b, 16, 10, 10
-      nn.ReLU(True),
-      nn.MaxPool2d(2, stride=2),  # b, 16, 5, 5
-      nn.Conv2d(16, 8, 3, stride=2, padding=1),  # b, 8, 3, 3
-      nn.ReLU(True),
-      nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
-    )
-    self.decoder = nn.Sequential(
-      nn.ConvTranspose2d(8, 16, 3, stride=2),  # b, 16, 5, 5
-      nn.ReLU(True),
-      nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1),  # b, 8, 15, 15
-      nn.ReLU(True),
-      nn.ConvTranspose2d(8, 1, 2, stride=2, padding=1),  # b, 1, 28, 28
-      nn.Tanh()
-    )
-
-  def forward(self, x):
-    x = self.encoder(x)
-    x = self.decoder(x)
-    return x
-
-
 class StackableNetwork(object):
+
+  def DEFAULT_MAP_F(self):
+    raise "Provide a default map function"
+
   def calculate_upstream(self, previous_network):
-    raise NotImplementedError( "Should have implemented this" )
+    raise "Provide an upstream function"
 
 
 class Autoencoder(nn.Module, StackableNetwork):
@@ -41,13 +19,12 @@ class Autoencoder(nn.Module, StackableNetwork):
   encoder: nn.Sequential = None
   decoder: nn.Sequential = None
 
-  def __init__(self, color_channels=1):
+  def __init__(self, color_channels=3):
     super().__init__()
-
-    # Conv2d:      b,1,28,28   -->  b,8,28,28
-    # MaxPool2d:   b,8,28,28   -->  b,8,14,14
-    # Conv2d:      b,8,14,14   -->  b,16,14,14
-    # MaxPool2d:   b,16,14,14  -->  b,16,7,7
+    # Conv2d:      b,1c,w,h       -->  b,8c,w,h
+    # MaxPool2d:   b,8c,w,h       -->  b,8c,w/2,h/2
+    # Conv2d:      b,8c,w/2,h/2   -->  b,16c,w/2,h/2
+    # MaxPool2d:   b,16c,w/2,h/2  -->  b,16c,w/4,h/4
     self.upstream_layers = nn.Sequential( 
       nn.Conv2d(in_channels=color_channels, out_channels=color_channels*8, kernel_size=3, stride=1, padding=1),   
       nn.BatchNorm2d(num_features=color_channels*8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
@@ -58,14 +35,14 @@ class Autoencoder(nn.Module, StackableNetwork):
     self.encoder = nn.Sequential(
       nn.Conv2d(in_channels=color_channels*8, out_channels=color_channels*16, kernel_size=3, stride=1, padding=1), 
       nn.BatchNorm2d(num_features=color_channels*16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-      nn.ReLU(True),
+      nn.LeakyReLU(True),
       nn.MaxPool2d(kernel_size=2)   
     )
 
-    # Interpolate:  b,16,7,7    -->  b,16,14,14
-    # Conv2d:       b,16,14,14  -->  b,8,14,14
-    # Interpolate:  b,8,14,14   -->  b,8,28,28
-    # Conv2d:       b,16,14,14  -->  b,8,14,14
+    # Interpolate:  b,16c,w/4,h/4  -->  b,16c,w/2,h/2
+    # Conv2d:       b,16c,w/2,h/2  -->  b,8c,w/2,h/2
+    # Interpolate:  b,8c,w/2,h/2   -->  b,8c,w,h
+    # Conv2d:       b,8c,w,h       -->  b,1c,w,h
     self.decoder = nn.Sequential(
       Interpolate(),                
       nn.Conv2d(in_channels=color_channels*16, out_channels=color_channels*8, kernel_size=3, stride=1, padding=1),       
@@ -78,8 +55,7 @@ class Autoencoder(nn.Module, StackableNetwork):
     )
 
   def calculate_upstream(self, x):
-    with no_grad():
-      x = self.upstream_layers(x)
+    x = self.upstream_layers(x)
     return x
 
   def forward(self, x):
@@ -88,8 +64,14 @@ class Autoencoder(nn.Module, StackableNetwork):
     x = self.decoder(x)
     return x
   
+def map_f_impl(x):
+  ## Define the mapping function from upstream layer to the input of next layer
+  return x
+
 
 class SupervisedAutoencoder(Autoencoder, StackableNetwork):
+
+  DEFAULT_MAP_F = map_f_impl
 
   supervision: nn.Sequential = None
 
@@ -113,14 +95,18 @@ class SupervisedAutoencoder(Autoencoder, StackableNetwork):
 class NetworkStack(nn.Module):
 
   networks: List[StackableNetwork] = None
+  map_to_input: 
   
-  def __init__(self, networks: List[StackableNetwork], train_every_pass=False):
-    super().__init__(self)
+  def __init__(self, networks: List[(StackableNetwork, function)], train_every_pass=False):
+    super().__init__()
     self.networks = networks
+    #TODO: check for default map functon
   
   def forward(self, x):
     for i in range(len(self.networks) - 1):
-      x = self.networks[i].calculate_upstream(x)
-    x = self.networks[0].forward(x)
-    return x
+      with no_grad():
+        x = self.networks[i].calculate_upstream(x)
+        x = map_to_input_f(x)
+    decoding, prediction = self.networks[-1].forward(x)
+    return decoding, prediction
     
