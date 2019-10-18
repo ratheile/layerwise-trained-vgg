@@ -1,15 +1,30 @@
-from torch import nn
+from torch import nn, Tensor
 from torch import no_grad
 from .interpolate import Interpolate
 from .fcview import FCView
-from typing import List
+from typing import List, Callable, Tuple
 
 class StackableNetwork(object):
+  """
+  Interface, not a Class! Do not implement anything here
+  Classes that inherit from StackableNetwork are required,
+  (in python by convention, not enforced) to provide an
+  implementation of these functions.
+  """
 
   def DEFAULT_MAP_F(self):
+    """
+    Helper Function: provides a default implementation
+    of the upstream mapping function if the user decides
+    to not implement something special.
+    """
     raise "Provide a default map function"
 
   def calculate_upstream(self, previous_network):
+    """
+    Calculate the output to the point where the
+    map function will be applied after.
+    """
     raise "Provide an upstream function"
 
 
@@ -64,8 +79,14 @@ class Autoencoder(nn.Module, StackableNetwork):
     x = self.decoder(x)
     return x
   
+
+
 def map_f_impl(x):
-  ## Define the mapping function from upstream layer to the input of next layer
+  """
+  Define the mapping function from upstream layer to the input of next layer
+  this is just a default function that is linked to DEFAULT_MAP_F.
+  (only implement things once if poissible)
+  """
   return x
 
 
@@ -95,18 +116,21 @@ class SupervisedAutoencoder(Autoencoder, StackableNetwork):
 class NetworkStack(nn.Module):
 
   networks: List[StackableNetwork] = None
-  map_to_input: 
+  map_to_input: Callable[[Tensor], Tensor] 
   
-  def __init__(self, networks: List[(StackableNetwork, function)], train_every_pass=False):
+  def __init__(self,
+    networks: List[Tuple[StackableNetwork, Callable[[Tensor], Tensor]]],
+    train_every_pass=False
+  ):
     super().__init__()
     self.networks = networks
-    #TODO: check for default map functon
   
   def forward(self, x):
     for i in range(len(self.networks) - 1):
       with no_grad():
-        x = self.networks[i].calculate_upstream(x)
-        x = map_to_input_f(x)
+        net, map_f = self.networks[i]
+        x = net.calculate_upstream(x)
+        x = map_f(x)
     decoding, prediction = self.networks[-1].forward(x)
     return decoding, prediction
     

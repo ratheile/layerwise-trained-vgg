@@ -1,5 +1,4 @@
 from .autoencoder import Autoencoder, \
-  OriginalAutoencoder, \
   SupervisedAutoencoder, \
   StackableNetwork, \
   NetworkStack
@@ -9,7 +8,6 @@ from .fcview import FCView
 
 __all__ = (
   'Autoencoder',
-  'OriginalAutoencoder',
   'SupervisedAutoencoder',
   'Interpolate',
   'StackableNetwork',

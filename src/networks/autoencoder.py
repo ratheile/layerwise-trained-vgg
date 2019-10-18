@@ -1,4 +1,4 @@
-from modules import Autoencoder, OriginalAutoencoder, \
+from modules import Autoencoder, \
   SupervisedAutoencoder, StackableNetwork, NetworkStack
 
 from loaders import semi_supervised_mnist, semi_supervised_cifar10
@@ -11,7 +11,7 @@ from torch import nn, Tensor
 from torch import cat as torch_cat
 from torch import save as torch_save
 from torch import max as torch_max
-from torch.optim import Adam
+from torch.optim import Adam, Optimizer
 
 #logging
 from torch.utils.tensorboard import SummaryWriter
@@ -19,15 +19,58 @@ from torchsummary import summary
 
 import os
 import io
+from dataclasses import dataclass
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+from typing import List
 
 @dataclass
 class LayerTrainingDefinition:
   num_epochs: int = 100
   model: NetworkStack = None
+  optimizer: Optimizer = None
 
+
+def default_network_factory(
+  learning_rate:float,
+  layers:int=2,
+  device:str='cpu',
+  weight_decay:float=1e-5
+) -> List[LayerTrainingDefinition]:
+
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  model_l1 = SupervisedAutoencoder(color_channels=3).to(device)
+  model_l2 = SupervisedAutoencoder(color_channels=3).to(device)
+
+  # TODO: Generate layers programmatically and make it depend on layers parameter
+  model_t1 = NetworkStack([
+    (model_l1, model_l1.DEFAULT_MAP_F),
+    ]).to(device)
+
+  model_t2 = NetworkStack([
+    (model_l1, model_l1.DEFAULT_MAP_F),
+    (model_l2, model_l2.DEFAULT_MAP_F)
+    ]).to(device)
+
+  optimizer_t1 = Adam(
+    model_t1.parameters(), 
+    lr=learning_rate, 
+    weight_decay=weight_decay
+  )
+
+  optimizer_t2 = Adam(
+    model_t2.parameters(), 
+    lr=learning_rate, 
+    weight_decay=weight_decay
+  )
+  layer_configs = [
+    LayerTrainingDefinition(num_epochs=100, model=model_t1, optimizer=optimizer_t1),
+    LayerTrainingDefinition(num_epochs=100, model=model_t2, optimizer=optimizer_t2)
+  ]
+
+  return layer_configs
 
 class AutoencoderNet():
 
@@ -35,6 +78,8 @@ class AutoencoderNet():
   unsupvised_loader: DataLoader = None
   test_loader: DataLoader = None
   writer:SummaryWriter = None
+
+  layer_configs: List[LayerTrainingDefinition] = []
 
   learning_rate = 1e-3
   num_epochs = 100
@@ -53,20 +98,10 @@ class AutoencoderNet():
     )
 
     assert len(self.supervised_loader) == len(self.unsupvised_loader)
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_l1 = SupervisedAutoencoder(color_channels=3).to(self.device)
-    model_l2 = SupervisedAutoencoder(color_channels=3).to(self.device)
-
-    model_t1 = NetworkStack([self.model_l1]).to(self.device)
-    model_t2 = NetworkStack([self.model_l1, self.model_l2]).to(self.device)
-
-    layer_configs = [
-      LayerTrainingDefinition(num_epochs=100, model=model_t1),
-      LayerTrainingDefinition(num_epochs=100, model=model_t2)
-    ]
+    self.layer_configs = default_network_factory(self.learning_rate)
 
     """
+    TODO: Implement in factory method to show sizes when network is built
     self.writer = SummaryWriter()
     summary(self.model, input_size=(color_channels,img_size,img_size))
     """
@@ -76,18 +111,14 @@ class AutoencoderNet():
     
     self.decoding_criterion = nn.MSELoss()
     self.pred_criterion = nn.CrossEntropyLoss()
-    self.optimizer = Adam(
-      self.model.parameters(), 
-      lr=self.learning_rate, 
-      weight_decay=1e-5
-    )
 
 
-  def save(self):
-    torch_save(
-      self.model.state_dict(),
-      './conv_autoencoder.pth'
-    )
+  # TODO: implement this for stacking networks
+  # def save(self, model):
+  #   torch_save(
+  #     self.model.state_dict(),
+  #     './conv_autoencoder.pth'
+  #   )
 
   def to_img(self, x):
     x = 0.5 * (x + 1)
@@ -115,8 +146,8 @@ class AutoencoderNet():
 
     self.writer.add_figure('DecodedImgs', fig, global_step=epoch)
 
-  def train(self, epoch, config: LayerTrainingDefinition):
-    self.model.train()
+  def train(self, epoch: int, config: LayerTrainingDefinition):
+    #TODO: check if still necessary self.model.train()
     for ith_batch in range(len(self.unsupvised_loader)):
 
       # _s means supervised _us unsupervised
@@ -131,8 +162,8 @@ class AutoencoderNet():
       dev_img_s = img_s.to(self.device)
       dev_label = label_s.to(self.device)
       
-      decoding_s, prediction = self.model(dev_img_s)
-      decoding_us, _ = self.model(dev_img_us)
+      decoding_s, prediction = config.model(dev_img_s)
+      decoding_us, _ = config.model(dev_img_us)
 
       loss_dc_s = self.decoding_criterion(decoding_s, dev_img_s)
       loss_dc_us = self.decoding_criterion(decoding_us, dev_img_us)
@@ -142,9 +173,9 @@ class AutoencoderNet():
       combo_loss = loss_dc_s + loss_dc_us + loss_pred
 
       # ===================backward====================
-      self.optimizer.zero_grad()
+      config.optimizer.zero_grad()
       combo_loss.backward()
-      self.optimizer.step()
+      config.optimizer.step()
 
     # ===================log========================
     # Calculate Accuracy
@@ -163,8 +194,8 @@ class AutoencoderNet():
     self.writer.add_scalar('Train Loss', combo_loss.item(), global_step=epoch)
     self.writer.add_scalar('Train Accuracy', accuracy, global_step=epoch)
     
-  def test(self, epoch):
-    self.model.eval()
+  def test(self, epoch: int, config: LayerTrainingDefinition):
+    # TODO: figure out if necessaryself self.model.eval()
     test_loss = 0
     test_acc = 0
 
@@ -175,7 +206,7 @@ class AutoencoderNet():
         img, label = data[0], data[1]
         dev_img, dev_label = img.to(self.device), label.to(self.device)
         # ===================Forward=====================
-        decoding, prediction = self.model(dev_img)
+        decoding, prediction = config.model(dev_img)
         loss_dc = self.decoding_criterion(decoding, dev_img)
         loss_pred = self.pred_criterion(prediction, dev_label)
         combo_loss = loss_dc + 0.5 * loss_pred
@@ -202,9 +233,8 @@ class AutoencoderNet():
       self.plot_img(real_imgs=img.numpy(), dc_imgs=decoding.cpu().detach().numpy(), epoch=epoch)
 
   def train_test(self, num_layers):
-    for config in layer_configs:
-      self.model.networks = self.model.networks[:layer]
-      for epoch in range(layer_configs.num_epochs):
+    for config in self.layer_configs:
+      for epoch in range(config.num_epochs):
         self.train(epoch, config)
         self.test(epoch, config)
     
