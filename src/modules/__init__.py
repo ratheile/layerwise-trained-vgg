@@ -1,7 +1,8 @@
 from .autoencoder import Autoencoder, \
   SupervisedAutoencoder, \
   StackableNetwork, \
-  NetworkStack
+  NetworkStack, \
+  RandomMap
 
 from .interpolate import Interpolate
 from .fcview import FCView
@@ -12,5 +13,6 @@ __all__ = (
   'Interpolate',
   'StackableNetwork',
   'NetworkStack',
-  'FCView'
+  'FCView',
+  'RandomMap'
 )

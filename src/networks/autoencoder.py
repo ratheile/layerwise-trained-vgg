@@ -1,5 +1,5 @@
 from modules import Autoencoder, \
-  SupervisedAutoencoder, StackableNetwork, NetworkStack
+  SupervisedAutoencoder, StackableNetwork, NetworkStack, RandomMap
 
 from loaders import semi_supervised_mnist, semi_supervised_cifar10
 
@@ -34,24 +34,23 @@ class LayerTrainingDefinition:
 
 
 def default_network_factory(
+  device: str,
   learning_rate:float,
   layers:int=2,
-  device:str='cpu',
   weight_decay:float=1e-5
 ) -> List[LayerTrainingDefinition]:
 
-  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model_l1 = SupervisedAutoencoder(color_channels=3).to(device)
   model_l2 = SupervisedAutoencoder(color_channels=3).to(device)
 
   # TODO: Generate layers programmatically and make it depend on layers parameter
   model_t1 = NetworkStack([
-    (model_l1, model_l1.DEFAULT_MAP_F),
+    (model_l1, None),
     ]).to(device)
 
   model_t2 = NetworkStack([
-    (model_l1, model_l1.DEFAULT_MAP_F),
-    (model_l2, model_l2.DEFAULT_MAP_F)
+    (model_l1, RandomMap(in_shape=(24,16,16), out_shape=(3,32,32)).to(device)),
+    (model_l2, None),
     ]).to(device)
 
   optimizer_t1 = Adam(
@@ -88,6 +87,7 @@ class AutoencoderNet():
   test_accs = []
 
   def __init__(self, data_path, ):
+    self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     #TODO: automatically fill these variables
     color_channels=3
@@ -98,11 +98,11 @@ class AutoencoderNet():
     )
 
     assert len(self.supervised_loader) == len(self.unsupvised_loader)
-    self.layer_configs = default_network_factory(self.learning_rate)
+    self.layer_configs = default_network_factory(self.device, self.learning_rate)
 
+    self.writer = SummaryWriter()
     """
     TODO: Implement in factory method to show sizes when network is built
-    self.writer = SummaryWriter()
     summary(self.model, input_size=(color_channels,img_size,img_size))
     """
 
@@ -146,7 +146,7 @@ class AutoencoderNet():
 
     self.writer.add_figure('DecodedImgs', fig, global_step=epoch)
 
-  def train(self, epoch: int, config: LayerTrainingDefinition):
+  def train(self, epoch: int, global_epoch:int,  config: LayerTrainingDefinition):
     #TODO: check if still necessary self.model.train()
     for ith_batch in range(len(self.unsupvised_loader)):
 
@@ -157,9 +157,10 @@ class AutoencoderNet():
       img_us, _ = (lambda d: (d[0], d[1]))(next(iter_us))
       img_s, label_s = (lambda d: (d[0], d[1]))(next(iter_s))
 
-      # copy all vars to device
-      dev_img_us = img_us.to(self.device)
-      dev_img_s = img_s.to(self.device)
+      # copy all vars to device and calculate the topmost stack representation
+      # TODO: avoid calculating this representation twice (here and in forward())
+      dev_img_us = config.model.upwards(img_us.to(self.device))
+      dev_img_s = config.model.upwards(img_s.to(self.device))
       dev_label = label_s.to(self.device)
       
       decoding_s, prediction = config.model(dev_img_s)
@@ -169,6 +170,7 @@ class AutoencoderNet():
       loss_dc_us = self.decoding_criterion(decoding_us, dev_img_us)
 
       loss_pred = self.pred_criterion(prediction, dev_label)
+
 
       combo_loss = loss_dc_s + loss_dc_us + loss_pred
 
@@ -191,10 +193,10 @@ class AutoencoderNet():
         )
       )
     
-    self.writer.add_scalar('Train Loss', combo_loss.item(), global_step=epoch)
-    self.writer.add_scalar('Train Accuracy', accuracy, global_step=epoch)
+    self.writer.add_scalar('Train Loss', combo_loss.item(), global_step=global_epoch)
+    self.writer.add_scalar('Train Accuracy', accuracy, global_step=global_epoch)
     
-  def test(self, epoch: int, config: LayerTrainingDefinition):
+  def test(self, epoch: int, global_epoch:int, config: LayerTrainingDefinition):
     # TODO: figure out if necessaryself self.model.eval()
     test_loss = 0
     test_acc = 0
@@ -204,7 +206,12 @@ class AutoencoderNet():
       labels: Tensor = None
       for data in self.test_loader:
         img, label = data[0], data[1]
-        dev_img, dev_label = img.to(self.device), label.to(self.device)
+
+        # copy all vars to device and calculate the topmost stack representation
+        # TODO: avoid calculating this representation twice (here and in forward())
+        dev_img = config.model.upwards(img.to(self.device))
+        dev_label = label.to(self.device)
+
         # ===================Forward=====================
         decoding, prediction = config.model(dev_img)
         loss_dc = self.decoding_criterion(decoding, dev_img)
@@ -226,15 +233,19 @@ class AutoencoderNet():
       )
     )
 
-    self.writer.add_scalar('Test Loss', test_loss, global_step=epoch)
-    self.writer.add_scalar('Test Accuracy', test_acc, global_step=epoch)
+    self.writer.add_scalar('Test Loss', test_loss, global_step=global_epoch)
+    self.writer.add_scalar('Test Accuracy', test_acc, global_step=global_epoch)
 
     if epoch % 5 == 0:
-      self.plot_img(real_imgs=img.numpy(), dc_imgs=decoding.cpu().detach().numpy(), epoch=epoch)
+      self.plot_img(real_imgs=dev_img.cpu().numpy(),
+                    dc_imgs=decoding.cpu().detach().numpy(),
+                    epoch=global_epoch)
 
-  def train_test(self, num_layers):
+  def train_test(self):
+    total_epochs = 0
     for config in self.layer_configs:
       for epoch in range(config.num_epochs):
-        self.train(epoch, config)
-        self.test(epoch, config)
+        self.train(epoch, config=config, global_epoch=total_epochs)
+        self.test(epoch, config=config, global_epoch=total_epochs)
+        total_epochs += 1
     
