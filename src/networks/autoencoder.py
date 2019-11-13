@@ -31,6 +31,7 @@ class LayerTrainingDefinition:
   num_epochs: int = 100
   model: NetworkStack = None
   optimizer: Optimizer = None
+  use_pretrained = None
 
 
 def default_network_factory(
@@ -54,13 +55,13 @@ def default_network_factory(
     ]).to(device)
 
   optimizer_t1 = Adam(
-    model_t1.parameters(), 
+    model_l1.parameters(), 
     lr=learning_rate, 
     weight_decay=weight_decay
   )
 
   optimizer_t2 = Adam(
-    model_t2.parameters(), 
+    model_l2.parameters(), 
     lr=learning_rate, 
     weight_decay=weight_decay
   )
@@ -73,18 +74,9 @@ def default_network_factory(
 
 class AutoencoderNet():
 
-  supervised_loader: DataLoader = None
-  unsupvised_loader: DataLoader = None
-  test_loader: DataLoader = None
-  writer:SummaryWriter = None
-
-  layer_configs: List[LayerTrainingDefinition] = []
-
   learning_rate = 1e-3
   num_epochs = 100
   device = 'cpu'
-  test_losses = []
-  test_accs = []
 
   def __init__(self, data_path, ):
     self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -112,6 +104,8 @@ class AutoencoderNet():
     self.decoding_criterion = nn.MSELoss()
     self.pred_criterion = nn.CrossEntropyLoss()
 
+    self.test_losses = []
+    self.test_accs =  []
 
   # TODO: implement this for stacking networks
   # def save(self, model):
@@ -159,8 +153,9 @@ class AutoencoderNet():
 
       # copy all vars to device and calculate the topmost stack representation
       # TODO: avoid calculating this representation twice (here and in forward())
-      dev_img_us = config.model.upwards(img_us.to(self.device))
-      dev_img_s = config.model.upwards(img_s.to(self.device))
+      with torch.no_grad():
+        dev_img_us = config.model.upwards(img_us.to(self.device))
+        dev_img_s = config.model.upwards(img_s.to(self.device))
       dev_label = label_s.to(self.device)
       
       decoding_s, prediction = config.model(dev_img_s)
@@ -196,7 +191,12 @@ class AutoencoderNet():
     self.writer.add_scalar('Train Loss', combo_loss.item(), global_step=global_epoch)
     self.writer.add_scalar('Train Accuracy', accuracy, global_step=global_epoch)
     
-  def test(self, epoch: int, global_epoch:int, config: LayerTrainingDefinition):
+  def test(self, 
+          epoch: int, 
+          global_epoch:int, 
+          config: LayerTrainingDefinition,
+          plot_every_n_epochs=1):
+
     # TODO: figure out if necessaryself self.model.eval()
     test_loss = 0
     test_acc = 0
@@ -236,7 +236,7 @@ class AutoencoderNet():
     self.writer.add_scalar('Test Loss', test_loss, global_step=global_epoch)
     self.writer.add_scalar('Test Accuracy', test_acc, global_step=global_epoch)
 
-    if epoch % 5 == 0:
+    if epoch % plot_every_n_epochs == 0:
       self.plot_img(real_imgs=dev_img.cpu().numpy(),
                     dc_imgs=decoding.cpu().detach().numpy(),
                     epoch=global_epoch)
@@ -244,8 +244,12 @@ class AutoencoderNet():
   def train_test(self):
     total_epochs = 0
     for config in self.layer_configs:
-      for epoch in range(config.num_epochs):
-        self.train(epoch, config=config, global_epoch=total_epochs)
-        self.test(epoch, config=config, global_epoch=total_epochs)
-        total_epochs += 1
+      if config.use_pretrained is not None:
+        # load network from file
+        pass
+      else:
+        for epoch in range(config.num_epochs):
+          self.train(epoch, config=config, global_epoch=total_epochs)
+          self.test(epoch, config=config, global_epoch=total_epochs)
+          total_epochs += 1
     

@@ -34,16 +34,10 @@ class StackableNetwork(object):
     raise "Provide an upstream function"
 
 
-class Autoencoder(nn.Module):
-
-  # upstream_layers: nn.Sequential = None
-  # encoder: nn.Sequential = None
-  # decoder: nn.Sequential = None
+class Autoencoder(nn.Module, StackableNetwork):
 
   def __init__(self, color_channels=3):
-    # super(Autoencoder, self).__init__()
     super().__init__()
-    print("Hello from autoencoder")
 
     # Conv2d:      b,1c,w,h       -->  b,8c,w,h
     # MaxPool2d:   b,8c,w,h       -->  b,8c,w/2,h/2
@@ -91,13 +85,8 @@ class Autoencoder(nn.Module):
 
 class SupervisedAutoencoder(Autoencoder):
 
-  # supervision: nn.Sequential = None
-
   def __init__(self, color_channels):
     super().__init__(color_channels)
-    # Autoencoder.__init__(self, color_channels=color_channels)
-    # StackableNetwork.__init__(self)
-    print("Hello from supervised autoencoder")
 
     fc_layer_size = 16*8*8*color_channels
     self.supervision = nn.Sequential(
@@ -115,13 +104,6 @@ class SupervisedAutoencoder(Autoencoder):
 
 
 class RandomMap(nn.Module):
-
-  N: int = 0 # # of input elements
-  M: int = 0 # # of output elements
-  # P_st: Paramter = None # Sparse Tesnsor
-
-  in_shape: Tuple[int, int, int] = None
-  out_shape: Tuple[int, int, int] = None
 
   def __init__(self, 
     in_shape: Tuple[int, int, int], 
@@ -151,11 +133,6 @@ class RandomMap(nn.Module):
     
 class NetworkStack(nn.Module):
 
-  networks: List[StackableNetwork] = None
-  networks_sn: nn.ModuleList = None # StackableNetworks
-  networks_maps: nn.ModuleList = None # upstream maps
-  map_to_input: Callable[[Tensor], Tensor] 
-  
   def __init__(self,
     networks: List[Tuple[StackableNetwork, nn.Module]],
     train_every_pass=False
