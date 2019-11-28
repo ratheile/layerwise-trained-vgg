@@ -1,5 +1,6 @@
 from modules import Autoencoder, \
-  SupervisedAutoencoder, StackableNetwork, NetworkStack, RandomMap
+  SupervisedAutoencoder, StackableNetwork, NetworkStack, \
+  RandomMap, ConvMap, InterpolationMap
 
 from loaders import semi_supervised_mnist, semi_supervised_cifar10
 from loaders import ConfigLoader
@@ -78,9 +79,19 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
     ).to(device)
 
     if id_l < num_layers - 1:
-      upstream = RandomMap(
-        in_shape=(24,16,16),
-        out_shape=(3,32,32)).to(device)
+      uprms = rcfg[f'layers/{id_l}/upstream_params']
+      upstream = rcfg.switch(f'layers/{id_l}/upstream', {
+        'RandomMap': lambda: RandomMap( 
+          in_shape=uprms['in_shape'],
+          out_shape=uprms['out_shape']
+        ),
+        'InterpolationMap': lambda: InterpolationMap(),
+        'ConvMap': lambda: ConvMap(
+          in_shape=uprms['in_shape'],
+          out_shape=uprms['out_shape']
+        )
+      }).to(device)
+
     else:
       upstream = None
 
@@ -93,8 +104,14 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
     if stack_path is not None:
       load_layer(stack, stack_path)
 
+    # some upstream maps require training
+    if upstream is not None and upstream.requires_training:
+      trainable_params = [model.parameters(), upstream.parameters()] 
+    else:
+      trainable_params = model.parameters()
+
     optimizer = Adam(
-      model.parameters(),
+      trainable_params,
       lr=learning_rate,
       weight_decay=weight_decay
     )

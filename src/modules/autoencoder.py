@@ -104,6 +104,8 @@ class SupervisedAutoencoder(Autoencoder):
 
 class RandomMap(nn.Module):
 
+  requires_training: bool = False
+
   def __init__(self, 
     in_shape: Tuple[int, int, int], 
     out_shape: Tuple[int, int, int]
@@ -130,10 +132,37 @@ class RandomMap(nn.Module):
     return x.view([x.size(0), *self.out_shape])
 
 
-class NetworkMap(nn.Module):
+class InterpolationMap(nn.Module):
+
+  requires_training: bool = False
+  
+  def __init__(self):
+    pass
 
   def forward(self, x):
     pass
+
+
+class ConvMap(nn.Module):
+
+  requires_training: bool = False
+
+  def __init__(self,
+    in_shape: Tuple[int, int, int],
+    out_shape: Tuple[int, int, int]
+  ):
+    super().__init__()
+
+    self.map = nn.Sequential(
+      nn.Conv2d(in_channels=in_shape[0], out_channels=out_shape[0], kernel_size=3, stride=1, padding=1), 
+      nn.BatchNorm2d(num_features=out_shape[0], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.LeakyReLU(True),
+      Interpolate()
+    )
+
+  def forward(self, x):
+    x = self.map(x)
+    return x
     
 class NetworkStack(nn.Module):
 
@@ -153,10 +182,19 @@ class NetworkStack(nn.Module):
 
   def upwards(self, x):
     for i in range(len(self.networks) - 1):
-      with no_grad():
-        net, map_module = self.networks[i]
-        x = net.calculate_upstream(x)
+      net, map_module = self.networks[i]
+      if map_module.requires_training:
+        # map module forward needs to be outside of
+        # no_grad environment because of the req.
+        # training!
+        with no_grad():
+          x = net.calculate_upstream(x)
         x = map_module.forward(x)
+      else:
+        with no_grad():
+          x = net.calculate_upstream(x)
+          x = map_module.forward(x)
+    # end for loop
     return x
 
   

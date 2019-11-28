@@ -6,7 +6,6 @@ batch_size: 1000
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
-  sub: asdf
 decoding_criterion: MSELoss # Supports: MSELoss
 prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
 
@@ -15,11 +14,16 @@ prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
 layers:
   - num_epoch: 1
     optimizer: Adam
-    pretraining_load: trained_models/cifar10/layer_0_stack.pickle
-    pretraining_store: null
-    # pretraining_store: trained_models/cifar10 
-    # pretraining_load: null 
-    upstream: RandomMapping
+    # pretraining_load: trained_models/cifar10/layer_0_stack.pickle
+    # pretraining_store: null
+    pretraining_store: trained_models/cifar10 
+    pretraining_load: null 
+
+    # Supports RandomMap | ConvMap
+    upstream: ConvMap 
+    upstream_params:
+      in_shape: !!python/tuple [24,16,16]
+      out_shape: !!python/tuple [3,32,32]
 
   - num_epoch: 10
     optimizer: Adam
