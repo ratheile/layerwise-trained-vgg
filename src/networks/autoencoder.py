@@ -359,14 +359,16 @@ class AutoencoderNet():
         logging.info('### Training layer {} ###'.format(id_c)) 
         for epoch in range(config.num_epochs):
           self.train(epoch, config=config, global_epoch=total_epochs)
-          self.test(epoch, config=config, global_epoch=total_epochs)
           total_epochs += 1
+          self.test(epoch, config=config, global_epoch=total_epochs)
+        # end epoch loop
 
-          if config.pretraining_store is not None:
-            base = '{}/{}'.format(
-              config.pretraining_store, 
-              config.layer_name
-            )
-            fn = f'{base}_stack.pickle'
-            save_layer(config.stack, fn)
-    
+
+        if config.pretraining_store is not None:
+          base = '{}/{}'.format(
+            config.pretraining_store, 
+            config.layer_name
+          )
+          fn = f'{base}_stack.pickle'
+          save_layer(config.stack, fn)
+  
