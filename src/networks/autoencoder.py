@@ -2,6 +2,7 @@ from modules import Autoencoder, \
   SupervisedAutoencoder, StackableNetwork, NetworkStack, RandomMap
 
 from loaders import semi_supervised_mnist, semi_supervised_cifar10
+from loaders import ConfigLoader
 
 import torch
 from torch.autograd import Variable
@@ -10,12 +11,14 @@ from torch.utils.data import DataLoader
 from torch import nn, Tensor 
 from torch import cat as torch_cat
 from torch import save as torch_save
+from torch import load as torch_load
 from torch import max as torch_max
 from torch.optim import Adam, Optimizer
 
 #logging
 from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
+import logging
 
 import os
 import io
@@ -24,25 +27,108 @@ from dataclasses import dataclass
 import numpy as np
 import matplotlib.pyplot as plt
 
-from typing import List
+from typing import List, IO
 
 @dataclass
 class LayerTrainingDefinition:
-  num_epochs: int = 100
-  model: NetworkStack = None
-  optimizer: Optimizer = None
-  use_pretrained = None
+  layer_name: str = None
+  #config
+  num_epochs: int = 0
+  pretraining_store: str = None
+  pretraining_load: str = None
 
+  # stack including this layer
+  stack: NetworkStack = None
+
+  # this layers elements 
+  upstream: nn.Module = None
+  model: nn.Module = None
+
+  # other vars
+  optimizer: Optimizer = None
+
+def ensure_dir(path: str):
+    directory = os.path.dirname(path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+def save_layer(layer: nn.Module, path:str):
+  logging.info('### Stored layer as {} ###'.format(path))
+  ensure_dir(path)
+  torch_save(layer.state_dict(), path)
+
+def load_layer(layer: nn.Module, path: str):
+    return layer.load_state_dict(torch_load(path))
+
+def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
+  -> List[LayerTrainingDefinition]:
+
+  num_layers = len(rcfg['layers'])
+  device = gcfg['device']
+  learning_rate = rcfg['learning_rate']
+  weight_decay = rcfg['weight_decay']
+  color_channels = rcfg['color_channels']
+
+  layer_configs = []
+
+  for id_l, layer in enumerate(rcfg['layers']):
+
+    model = SupervisedAutoencoder(
+      color_channels=color_channels
+    ).to(device)
+
+    if id_l < num_layers - 1:
+      upstream = RandomMap(
+        in_shape=(24,16,16),
+        out_shape=(3,32,32)).to(device)
+    else:
+      upstream = None
+
+    prev_stack = [(cfg.model, cfg.upstream) for cfg in layer_configs]
+    prev_stack.append((model, upstream))
+    stack = NetworkStack(prev_stack).to(device)
+
+    # load stack from pickle if required
+    stack_path = layer['pretraining_load']
+    if stack_path is not None:
+      load_layer(stack, stack_path)
+
+    optimizer = Adam(
+      model.parameters(),
+      lr=learning_rate,
+      weight_decay=weight_decay
+    )
+
+    layer_name = f'layer_{id_l}'
+        
+    layer_configs.append(
+      LayerTrainingDefinition(
+        layer_name=layer_name,
+        num_epochs=layer['num_epoch'], 
+        upstream=upstream,
+        stack=stack,
+        model=model,
+        optimizer=optimizer,
+        pretraining_store=layer['pretraining_store'],
+        pretraining_load=layer['pretraining_load'],
+      )
+    )
+    # end for loop
+
+  return layer_configs
 
 def default_network_factory(
-  device: str,
-  learning_rate:float,
-  layers:int=2,
-  weight_decay:float=1e-5
-) -> List[LayerTrainingDefinition]:
+    gcfg: ConfigLoader,
+    rcfg: ConfigLoader
+  ) -> List[LayerTrainingDefinition]:
 
-  model_l1 = SupervisedAutoencoder(color_channels=3).to(device)
-  model_l2 = SupervisedAutoencoder(color_channels=3).to(device)
+  device = gcfg['device']
+  learning_rate = rcfg['learning_rate']
+  weight_decay = rcfg['weight_decay']
+  color_channels = rcfg['color_channels']
+
+  model_l1 = SupervisedAutoencoder(color_channels=color_channels).to(device)
+  model_l2 = SupervisedAutoencoder(color_channels=color_channels).to(device)
 
   # TODO: Generate layers programmatically and make it depend on layers parameter
   model_t1 = NetworkStack([
@@ -66,7 +152,7 @@ def default_network_factory(
     weight_decay=weight_decay
   )
   layer_configs = [
-    LayerTrainingDefinition(num_epochs=100, model=model_t1, optimizer=optimizer_t1),
+    LayerTrainingDefinition(num_epochs=1, model=model_t1, optimizer=optimizer_t1),
     LayerTrainingDefinition(num_epochs=100, model=model_t2, optimizer=optimizer_t2)
   ]
 
@@ -74,23 +160,34 @@ def default_network_factory(
 
 class AutoencoderNet():
 
-  learning_rate = 1e-3
-  num_epochs = 100
-  device = 'cpu'
+  def __init__(self, gcfg: ConfigLoader, rcfg: ConfigLoader):
 
-  def __init__(self, data_path, ):
-    self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if gcfg['device'] == 'cuda':
+      self.device = torch.device(
+          "cuda" if torch.cuda.is_available() else "cpu"
+        )
 
-    #TODO: automatically fill these variables
-    color_channels=3
-    img_size=32
+    self.device        = gcfg['device']
+    self.learning_rate = rcfg['learning_rate']
+    self.weight_decay  = rcfg['weight_decay']
+    color_channels = rcfg['color_channels']
+    data_path = gcfg['datasets/{}/path'.format(rcfg['dataset'])]
+
     self.supervised_loader, self.unsupvised_loader,\
-    self.test_loader = semi_supervised_cifar10(
-      data_path, supervised_ratio=0.1, batch_size=1000
-    )
+    self.test_loader = rcfg.switch('dataset', {
+      'cifar10': lambda: semi_supervised_cifar10(
+        data_path,
+        supervised_ratio=rcfg['supervised_ratio'],
+        batch_size=rcfg['batch_size']
+      ),
+      'mnist': lambda: semi_supervised_mnist(
+        data_path,
+        supervised_ratio=rcfg['supervised_ratio'],
+        batch_size=rcfg['batch_size']
+      )})
 
+    self.layer_configs = cfg_to_network(gcfg, rcfg)
     assert len(self.supervised_loader) == len(self.unsupvised_loader)
-    self.layer_configs = default_network_factory(self.device, self.learning_rate)
 
     self.writer = SummaryWriter()
     """
@@ -98,21 +195,16 @@ class AutoencoderNet():
     summary(self.model, input_size=(color_channels,img_size,img_size))
     """
 
-    if not os.path.exists('./dc_img'):
-        os.mkdir('./dc_img')
-    
-    self.decoding_criterion = nn.MSELoss()
-    self.pred_criterion = nn.CrossEntropyLoss()
+    self.decoding_criterion = rcfg.switch('decoding_criterion', {
+      'MSELoss': lambda: nn.MSELoss(),
+    })
+
+    self.pred_criterion = rcfg.switch('prediction_criterion', {
+      'CrossEntropyLoss': lambda: nn.CrossEntropyLoss()
+    })
 
     self.test_losses = []
     self.test_accs =  []
-
-  # TODO: implement this for stacking networks
-  # def save(self, model):
-  #   torch_save(
-  #     self.model.state_dict(),
-  #     './conv_autoencoder.pth'
-  #   )
 
   def to_img(self, x):
     x = 0.5 * (x + 1)
@@ -138,7 +230,7 @@ class AutoencoderNet():
         ax.get_yaxis().set_visible(False)
 
 
-    self.writer.add_figure('DecodedImgs', fig, global_step=epoch)
+    self.writer.add_figure('decoded_imgs', fig, global_step=epoch)
 
   def train(self, epoch: int, global_epoch:int,  config: LayerTrainingDefinition):
     #TODO: check if still necessary self.model.train()
@@ -154,8 +246,8 @@ class AutoencoderNet():
       # copy all vars to device and calculate the topmost stack representation
       # TODO: avoid calculating this representation twice (here and in forward())
       with torch.no_grad():
-        dev_img_us = config.model.upwards(img_us.to(self.device))
-        dev_img_s = config.model.upwards(img_s.to(self.device))
+        dev_img_us = config.stack.upwards(img_us.to(self.device))
+        dev_img_s = config.stack.upwards(img_s.to(self.device))
       dev_label = label_s.to(self.device)
       
       decoding_s, prediction = config.model(dev_img_s)
@@ -179,17 +271,17 @@ class AutoencoderNet():
     _, predicted = torch_max(prediction.data, 1)
     accuracy = (predicted.cpu().numpy() == label_s.numpy()).sum() / len(label_s)
 
-    print('Epoch [{}/{}]\nTrain Loss: {:.4f}      Train Acc: {:.4f}'
+    logging.info('Epoch [{}/{}] Train Loss:{:.4f} Train Acc:{:.4f}'
       .format(
           epoch+1,
-          self.num_epochs, 
+          config.num_epochs,
           combo_loss.item(),
           accuracy
         )
       )
     
-    self.writer.add_scalar('Train Loss', combo_loss.item(), global_step=global_epoch)
-    self.writer.add_scalar('Train Accuracy', accuracy, global_step=global_epoch)
+    self.writer.add_scalar('train_loss', combo_loss.item(), global_step=global_epoch)
+    self.writer.add_scalar('train_accuracy', accuracy, global_step=global_epoch)
     
   def test(self, 
           epoch: int, 
@@ -209,7 +301,7 @@ class AutoencoderNet():
 
         # copy all vars to device and calculate the topmost stack representation
         # TODO: avoid calculating this representation twice (here and in forward())
-        dev_img = config.model.upwards(img.to(self.device))
+        dev_img = config.stack.upwards(img.to(self.device))
         dev_label = label.to(self.device)
 
         # ===================Forward=====================
@@ -226,15 +318,17 @@ class AutoencoderNet():
     self.test_losses.append(test_loss)
     self.test_accs.append(test_acc)
 
-    print('Test Loss:  {:.4f}      Test Acc:  {:.4f}\n'
+    logging.info('Epoch [{}/{}] Test Loss:{:.4f} Test Acc:{:.4f}'
       .format(
+        epoch + 1,
+        config.num_epochs,
         test_loss,
         test_acc
       )
     )
 
-    self.writer.add_scalar('Test Loss', test_loss, global_step=global_epoch)
-    self.writer.add_scalar('Test Accuracy', test_acc, global_step=global_epoch)
+    self.writer.add_scalar('test_loss', test_loss, global_step=global_epoch)
+    self.writer.add_scalar('test_accuracy', test_acc, global_step=global_epoch)
 
     if epoch % plot_every_n_epochs == 0:
       self.plot_img(real_imgs=dev_img.cpu().numpy(),
@@ -243,13 +337,19 @@ class AutoencoderNet():
 
   def train_test(self):
     total_epochs = 0
-    for config in self.layer_configs:
-      if config.use_pretrained is not None:
-        # load network from file
-        pass
-      else:
+    for id_c, config in enumerate(self.layer_configs): # LayerTrainingDefinition
+      if config.pretraining_load is None:
+        logging.info('### Training layer {} ###'.format(id_c)) 
         for epoch in range(config.num_epochs):
           self.train(epoch, config=config, global_epoch=total_epochs)
           self.test(epoch, config=config, global_epoch=total_epochs)
           total_epochs += 1
+
+          if config.pretraining_store is not None:
+            base = '{}/{}'.format(
+              config.pretraining_store, 
+              config.layer_name
+            )
+            fn = f'{base}_stack.pickle'
+            save_layer(config.stack, fn)
     

@@ -14,7 +14,6 @@ from numpy.random import permutation
 class StackableNetwork(object):
 
   def __init__(self):
-    print("Hello from stackable network")
     pass
 
   """
@@ -130,6 +129,11 @@ class RandomMap(nn.Module):
     x = torch.narrow(x_perm, dim=1, start=0, length=self.M)
     return x.view([x.size(0), *self.out_shape])
 
+
+class NetworkMap(nn.Module):
+
+  def forward(self, x):
+    pass
     
 class NetworkStack(nn.Module):
 
