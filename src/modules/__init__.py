@@ -4,7 +4,8 @@ from .autoencoder import Autoencoder, \
   NetworkStack, \
   RandomMap, \
   ConvMap, \
-  InterpolationMap
+  InterpolationMap, \
+  DecoderMap
 
 from .interpolate import Interpolate
 from .fcview import FCView
@@ -18,5 +19,6 @@ __all__ = (
   'FCView',
   'RandomMap',
   'TrainableMap',
-  'InterpolationMap'
+  'InterpolationMap',
+  'DecoderMap'
 )

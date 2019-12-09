@@ -1,0 +1,16 @@
+name: grewe
+channels:
+  - pytorch
+  -
+dependencies:
+  - python=3.7.5
+  - numpy
+  - matplotlib
+  - pytorch
+  - torchvision
+  - pyyaml
+  - tensorboard
+  - coloredlogs
+  - pip
+  - pip:
+    - torchsummary

@@ -60,13 +60,15 @@ class Autoencoder(nn.Module, StackableNetwork):
     # Conv2d:       b,16c,w/2,h/2  -->  b,8c,w/2,h/2
     # Interpolate:  b,8c,w/2,h/2   -->  b,8c,w,h
     # Conv2d:       b,8c,w,h       -->  b,1c,w,h
+    self.final_conv2d = nn.Conv2d(in_channels=color_channels*8, out_channels=color_channels*1, kernel_size=3, stride=1, padding=1)
+
     self.decoder = nn.Sequential(
       Interpolate(),                
       nn.Conv2d(in_channels=color_channels*16, out_channels=color_channels*8, kernel_size=3, stride=1, padding=1),       
       nn.BatchNorm2d(num_features=color_channels*8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
       nn.ReLU(True),
       Interpolate(),                
-      nn.Conv2d(in_channels=color_channels*8, out_channels=color_channels*1, kernel_size=3, stride=1, padding=1),   
+      self.final_conv2d,   
       nn.BatchNorm2d(num_features=color_channels*1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
       nn.Tanh()
     )
@@ -145,7 +147,7 @@ class InterpolationMap(nn.Module):
 
 class ConvMap(nn.Module):
 
-  requires_training: bool = False
+  requires_training: bool = True
 
   def __init__(self,
     in_shape: Tuple[int, int, int],
@@ -154,16 +156,57 @@ class ConvMap(nn.Module):
     super().__init__()
 
     self.map = nn.Sequential(
+      Interpolate(),
       nn.Conv2d(in_channels=in_shape[0], out_channels=out_shape[0], kernel_size=3, stride=1, padding=1), 
       nn.BatchNorm2d(num_features=out_shape[0], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-      nn.LeakyReLU(True),
-      Interpolate()
+      nn.LeakyReLU(True)
     )
 
   def forward(self, x):
     x = self.map(x)
     return x
+
+
+class DecoderMap(nn.Module):
+
+  requires_training: bool = True
+
+
+  def __init__(self, trained_net: Autoencoder):
+    super().__init__()
+    self.initialized: bool = False
+
+    tensor = trained_net.final_conv2d
     
+    self.map = nn.Sequential(
+      Interpolate(),
+      nn.Conv2d(
+        in_channels=tensor.in_channels,
+        out_channels=tensor.out_channels,
+        kernel_size=tensor.kernel_size,
+        stride=tensor.stride,
+        padding=tensor.padding
+      ), 
+      nn.BatchNorm2d(num_features=tensor.out_channels, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.LeakyReLU(True)
+    )
+
+    # have to store these in an array to not make nn.Modle add
+    # these params to the self.parameters() list,
+    # otherwise they are considedered for optimization which is bad
+    self.fixed_params = {'tensor': tensor}
+
+  def forward(self, x):
+    if not self.initialized:
+      self.initialized = True
+      tensor = self.fixed_params['tensor']
+      state = tensor.state_dict()
+      self.map[1].load_state_dict(state)
+      pass # get map from trained_net
+    x = self.map(x)
+    return x
+    
+
 class NetworkStack(nn.Module):
 
   def __init__(self,

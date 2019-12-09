@@ -1,6 +1,6 @@
 from modules import Autoencoder, \
   SupervisedAutoencoder, StackableNetwork, NetworkStack, \
-  RandomMap, ConvMap, InterpolationMap
+  RandomMap, ConvMap, InterpolationMap, DecoderMap
 
 from loaders import semi_supervised_mnist, semi_supervised_cifar10
 from loaders import ConfigLoader
@@ -89,7 +89,8 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
         'ConvMap': lambda: ConvMap(
           in_shape=uprms['in_shape'],
           out_shape=uprms['out_shape']
-        )
+        ),
+        'DecoderMap': lambda: DecoderMap(model)
       }).to(device)
 
     else:
@@ -106,7 +107,7 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
 
     # some upstream maps require training
     if upstream is not None and upstream.requires_training:
-      trainable_params = [model.parameters(), upstream.parameters()] 
+      trainable_params = list(model.parameters()) + list(upstream.parameters())
     else:
       trainable_params = model.parameters()
 
