@@ -38,20 +38,27 @@ class Autoencoder(nn.Module, StackableNetwork):
   def __init__(self, color_channels=3):
     super().__init__()
 
+
+    bn_args = { "eps":1e-05, "momentum":0.1, "affine":True, "track_running_stats":True }
+    c2d_args = { "kernel_size":3, "stride":1, "padding":1 }
+
+
     # Conv2d:      b,1c,w,h       -->  b,8c,w,h
     # MaxPool2d:   b,8c,w,h       -->  b,8c,w/2,h/2
     # Conv2d:      b,8c,w/2,h/2   -->  b,16c,w/2,h/2
     # MaxPool2d:   b,16c,w/2,h/2  -->  b,16c,w/4,h/4
     self.upstream_layers = nn.Sequential( 
-      nn.Conv2d(in_channels=color_channels, out_channels=color_channels*8, kernel_size=3, stride=1, padding=1),   
-      nn.BatchNorm2d(num_features=color_channels*8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-      nn.ReLU(True),
+      nn.Conv2d(in_channels=color_channels, out_channels=color_channels*8, **c2d_args),   
+      nn.BatchNorm2d(num_features=color_channels*8, **bn_args),
+      nn.Dropout(0.3),
+      nn.LeakyReLU(True),
       nn.MaxPool2d(kernel_size=2),  
     )
 
     self.encoder = nn.Sequential(
-      nn.Conv2d(in_channels=color_channels*8, out_channels=color_channels*16, kernel_size=3, stride=1, padding=1), 
-      nn.BatchNorm2d(num_features=color_channels*16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.Conv2d(in_channels=color_channels*8, out_channels=color_channels*16, **c2d_args), 
+      nn.BatchNorm2d(num_features=color_channels*16, **bn_args),
+      nn.Dropout(0.3),
       nn.LeakyReLU(True),
       nn.MaxPool2d(kernel_size=2)   
     )
@@ -60,16 +67,16 @@ class Autoencoder(nn.Module, StackableNetwork):
     # Conv2d:       b,16c,w/2,h/2  -->  b,8c,w/2,h/2
     # Interpolate:  b,8c,w/2,h/2   -->  b,8c,w,h
     # Conv2d:       b,8c,w,h       -->  b,1c,w,h
-    self.final_conv2d = nn.Conv2d(in_channels=color_channels*8, out_channels=color_channels*1, kernel_size=3, stride=1, padding=1)
+    self.final_conv2d = nn.Conv2d(in_channels=color_channels*8, out_channels=color_channels*1, **c2d_args)
 
     self.decoder = nn.Sequential(
       Interpolate(),                
-      nn.Conv2d(in_channels=color_channels*16, out_channels=color_channels*8, kernel_size=3, stride=1, padding=1),       
-      nn.BatchNorm2d(num_features=color_channels*8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-      nn.ReLU(True),
+      nn.Conv2d(in_channels=color_channels*16, out_channels=color_channels*8, **c2d_args),       
+      nn.BatchNorm2d(num_features=color_channels*8, **bn_args),
+      nn.LeakyReLU(True),
       Interpolate(),                
       self.final_conv2d,   
-      nn.BatchNorm2d(num_features=color_channels*1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.BatchNorm2d(num_features=color_channels*1, **bn_args),
       nn.Tanh()
     )
 
@@ -153,12 +160,15 @@ class ConvMap(nn.Module):
     in_shape: Tuple[int, int, int],
     out_shape: Tuple[int, int, int]
   ):
-    super().__init__()
+    super().__init__() 
+    
+    bn_args = { "eps":1e-05, "momentum":0.1, "affine":True, "track_running_stats":True }
+    c2d_args = { "kernel_size":3, "stride":1, "padding":1 }
 
     self.map = nn.Sequential(
       Interpolate(),
-      nn.Conv2d(in_channels=in_shape[0], out_channels=out_shape[0], kernel_size=3, stride=1, padding=1), 
-      nn.BatchNorm2d(num_features=out_shape[0], eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.Conv2d(in_channels=in_shape[0], out_channels=out_shape[0], **c2d_args), 
+      nn.BatchNorm2d(num_features=out_shape[0], **bn_args),
       nn.LeakyReLU(True)
     )
 
@@ -177,6 +187,7 @@ class DecoderMap(nn.Module):
     self.initialized: bool = False
 
     tensor = trained_net.final_conv2d
+    bn_args = { "eps":1e-05, "momentum":0.1, "affine":True, "track_running_stats":True }
     
     self.map = nn.Sequential(
       Interpolate(),
@@ -187,7 +198,8 @@ class DecoderMap(nn.Module):
         stride=tensor.stride,
         padding=tensor.padding
       ), 
-      nn.BatchNorm2d(num_features=tensor.out_channels, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+      nn.BatchNorm2d(num_features=tensor.out_channels, **bn_args),
+      nn.Dropout(0.3),
       nn.LeakyReLU(True)
     )
 

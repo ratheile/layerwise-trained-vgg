@@ -1,8 +1,9 @@
-learning_rate: 0.01
+learning_rate: 0.02
 weight_decay: 0.00001 # ADAM decay
 color_channels: 3
-supervised_ratio: 0.1
+supervised_ratio: 0.05
 batch_size: 1000
+test_every_n_epochs: 10
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
@@ -12,10 +13,10 @@ prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
 # pretraining_store must be a path !
 # pretraining_load must be a file name !
 layers:
-  - num_epoch: 1
+  - num_epoch: 50
     optimizer: Adam
-    #pretraining_load: trained_models/cifar10/layer_0_stack.pickle
-    #pretraining_store: null
+    # pretraining_load: trained_models/cifar10/layer_0_stack.pickle
+    # pretraining_store: null
     pretraining_load: null 
     pretraining_store: trained_models/cifar10 
 
@@ -25,9 +26,13 @@ layers:
       in_shape: !!python/tuple [24,16,16]
       out_shape: !!python/tuple [3,32,32]
 
-  - num_epoch: 1
+
+  - num_epoch: 50
     optimizer: Adam
-    pretraining_store: null
     pretraining_load:  null
-    upstream: None
-    
+    pretraining_store: trained_models/cifar10 
+    upstream: null
+    upstream_params:
+      in_shape: !!python/tuple [24,16,16]
+      out_shape: !!python/tuple [3,32,32]
+

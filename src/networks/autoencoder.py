@@ -188,6 +188,7 @@ class AutoencoderNet():
     self.device        = gcfg['device']
     self.learning_rate = rcfg['learning_rate']
     self.weight_decay  = rcfg['weight_decay']
+    self.test_every_n_epochs = rcfg['test_every_n_epochs']
     color_channels = rcfg['color_channels']
     data_path = gcfg['datasets/{}/path'.format(rcfg['dataset'])]
 
@@ -276,8 +277,8 @@ class AutoencoderNet():
 
       loss_pred = self.pred_criterion(prediction, dev_label)
 
-
-      combo_loss = loss_dc_s + loss_dc_us + loss_pred
+      alpha = 0.1
+      combo_loss = (loss_dc_s + loss_dc_us) * (1-alpha) + loss_pred * alpha
 
       # ===================backward====================
       config.optimizer.zero_grad()
@@ -361,7 +362,8 @@ class AutoencoderNet():
         for epoch in range(config.num_epochs):
           self.train(epoch, config=config, global_epoch=total_epochs)
           total_epochs += 1
-          self.test(epoch, config=config, global_epoch=total_epochs)
+          if total_epochs % self.test_every_n_epochs == 0:
+            self.test(epoch, config=config, global_epoch=total_epochs)
         # end epoch loop
 
 
@@ -372,4 +374,3 @@ class AutoencoderNet():
           )
           fn = f'{base}_stack.pickle'
           save_layer(config.stack, fn)
-  
