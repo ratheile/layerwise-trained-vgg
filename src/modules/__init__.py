@@ -1,4 +1,5 @@
 from .autoencoder import Autoencoder, \
+  SupervisedSidecarAutoencoder, \
   SupervisedAutoencoder, \
   StackableNetwork, \
   NetworkStack, \
@@ -10,15 +11,19 @@ from .autoencoder import Autoencoder, \
 from .interpolate import Interpolate
 from .fcview import FCView
 
+from .vgg import VGG
+
 __all__ = (
   'Autoencoder',
   'SupervisedAutoencoder',
+  'SupervisedSidecarAutoencoder',
   'Interpolate',
   'StackableNetwork',
   'NetworkStack',
   'FCView',
   'RandomMap',
-  'TrainableMap',
+  'ConvMap',
   'InterpolationMap',
-  'DecoderMap'
+  'DecoderMap',
+  'VGG'
 )

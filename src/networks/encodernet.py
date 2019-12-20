@@ -2,6 +2,8 @@ from modules import Autoencoder, \
   SupervisedAutoencoder, StackableNetwork, NetworkStack, \
   RandomMap, ConvMap, InterpolationMap, DecoderMap
 
+from modules import SupervisedSidecarAutoencoder, VGG
+
 from loaders import semi_supervised_mnist, semi_supervised_cifar10
 from loaders import ConfigLoader
 
@@ -61,6 +63,12 @@ def save_layer(layer: nn.Module, path:str):
 def load_layer(layer: nn.Module, path: str):
     return layer.load_state_dict(torch_load(path))
 
+def vgg_sidecar_layer(vgg: VGG, index:int, dropout:int) -> nn.Module:
+  vgg_layers, channels = vgg.get_layer(index)
+  scae = SupervisedSidecarAutoencoder(vgg_layers, channels, dropout)
+  return scae
+
+
 def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
   -> List[LayerTrainingDefinition]:
 
@@ -72,14 +80,29 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
 
   layer_configs = []
 
+  vgg = VGG()
+
   for id_l, layer in enumerate(rcfg['layers']):
 
-    model = SupervisedAutoencoder(
-      color_channels=color_channels
-    ).to(device)
+    dropout_rate = layer['dropout_rate']
+    model_type = layer['model']
+    uprms = layer['upstream_params']
 
-    if id_l < num_layers - 1:
-      uprms = rcfg[f'layers/{id_l}/upstream_params']
+    # Determine flags for generation
+    upstream_required = model_type == 'AE'
+
+    # Prepare the model
+    model = rcfg.switch('layers/{id_l}/model', {
+      'AE': lambda: SupervisedAutoencoder(
+        color_channels=color_channels
+      ),
+      'VGGn': lambda: vgg_sidecar_layer(vgg, id_l,
+        dropout=dropout_rate
+      )
+    }).to(device)
+
+    # Prepare the upstream
+    if id_l < num_layers - 1 and upstream_required:
       upstream = rcfg.switch(f'layers/{id_l}/upstream', {
         'RandomMap': lambda: RandomMap( 
           in_shape=uprms['in_shape'],
@@ -277,7 +300,7 @@ class AutoencoderNet():
 
       loss_pred = self.pred_criterion(prediction, dev_label)
 
-      alpha = 0.1
+      alpha = cfg.pred_loss_weight
       combo_loss = (loss_dc_s + loss_dc_us) * (1-alpha) + loss_pred * alpha
 
       # ===================backward====================

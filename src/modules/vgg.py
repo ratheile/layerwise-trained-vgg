@@ -1,4 +1,5 @@
 from torch import nn, Tensor
+from typing import Tuple, List
 
 cfgs = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -9,24 +10,26 @@ cfgs = {
 
 class VGG(nn.Module):
 
-  def __init__(self, layers, num_classes=1000, init_weights=True):
+  def __init__(self, num_classes=1000, init_weights=True):
     super(VGG, self).__init__()
-    self.features = layers
+    layers, trainable_layers = self.make_modules(cfgs['B'])
+    self.layers = layers
+    self.trainable_layers = trainable_layers
+
     self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
     self.classifier = nn.Sequential(
-      nn.Linear(512 * 7 * 7, 4096),
+      nn.Linear(512 * 7 * 7, 1024),
       nn.ReLU(True),
       nn.Dropout(),
-      nn.Linear(4096, 4096),
-      nn.ReLU(True),
-      nn.Dropout(),
-      nn.Linear(4096, num_classes),
+      nn.Linear(1024, num_classes),
     )
+
     if init_weights:
         self._initialize_weights()
 
   def forward(self, x):
-    x = self.features(x)
+    with torch.no_grad():
+      x = self.layers(x)
     x = self.avgpool(x)
     x = torch.flatten(x, 1)
     x = self.classifier(x)
@@ -44,24 +47,27 @@ class VGG(nn.Module):
       elif isinstance(m, nn.Linear):
         nn.init.normal_(m.weight, 0, 0.01)
         nn.init.constant_(m.bias, 0)
+ 
+  def get_trainable_modules(self) -> List[Tuple[List[nn.Module], int]]:
+    return self.trainable_layers
 
-
-def make_layers(cfg, batch_norm=False):
-  layers = []
-  in_channels = 3
-  for v in cfg:
-    if v == 'M':
-      layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
-    else:
-      conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
-      if batch_norm:
-        layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+  def make_modules(self, cfg, batch_norm=False):
+    layers = []
+    trainable_layers = [] # only add trainable blocks to this
+    trainable_layers_cs = []
+    in_channels = 3
+    for v in cfg:
+      if v == 'M':
+        layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
       else:
-        layers += [conv2d, nn.ReLU(inplace=True)]
-        in_channels = v
-  return nn.Sequential(*layers)
-
-
-def _vgg(cfg, batch_norm, **kwargs):
-  model = VGG(make_layers(cfgs[cfg], batch_norm=batch_norm), **kwargs)
-  return model
+        conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
+        if batch_norm:
+          module = [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+        else:
+          module = [conv2d, nn.ReLU(inplace=True)]
+          in_channels = v
+        layers += module
+        trainable_layers.append(module) 
+        trainable_layers_cs += [v]
+      
+    return layers, list(zip(trainable_layers, trainable_layers_cs))

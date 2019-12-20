@@ -1,8 +1,8 @@
 import unittest   # The test framework
 import torch
-from modules import RandomMap
 import numpy as np
 import pandas as pd
+from modules import RandomMap
 
 class Test_Transfer_Function(unittest.TestCase):
 
