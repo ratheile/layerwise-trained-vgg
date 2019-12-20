@@ -12,6 +12,6 @@ logging.info("----------------------------------")
 
 
 env_cfg = ConfigLoader().from_file('src/yaml/env.yml')
-run_cfg = ConfigLoader().from_file('src/yaml/nets/net_template.yml')
+run_cfg = ConfigLoader().from_file('src/yaml/nets/vgg.yml')
 net = AutoencoderNet(env_cfg, run_cfg)
 net.train_test()

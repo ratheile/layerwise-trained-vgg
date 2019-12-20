@@ -12,9 +12,9 @@ class VGG(nn.Module):
 
   def __init__(self, num_classes=1000, init_weights=True):
     super(VGG, self).__init__()
-    layers, trainable_layers = self.make_modules(cfgs['B'])
+    layers, trainable_modules = self.make_modules(cfgs['B'])
     self.layers = layers
-    self.trainable_layers = trainable_layers
+    self.trainable_modules = trainable_modules
 
     self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
     self.classifier = nn.Sequential(
@@ -49,25 +49,46 @@ class VGG(nn.Module):
         nn.init.constant_(m.bias, 0)
  
   def get_trainable_modules(self) -> List[Tuple[List[nn.Module], int]]:
-    return self.trainable_layers
+    return self.trainable_modules
 
   def make_modules(self, cfg, batch_norm=False):
-    layers = []
+    all_layers = []
     trainable_layers = [] # only add trainable blocks to this
-    trainable_layers_cs = []
+    trainable_layers_cs = [] # channel sizes
+    maps = [] # these layers are untrainable maps
+
     in_channels = 3
-    for v in cfg:
-      if v == 'M':
-        layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+
+    mp =  (list(map(lambda x: x if x == 'M' else None, cfg)) + [None])[1:]
+    cfg = list(filter(lambda t: t[0] != 'M',zip(cfg, mp)))
+    
+    for (out_channels, maxpl) in cfg:
+
+      conv2d = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+      if batch_norm:
+        module = [conv2d, nn.BatchNorm2d(out_channels), nn.ReLU(inplace=True)]
       else:
-        conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
-        if batch_norm:
-          module = [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
-        else:
-          module = [conv2d, nn.ReLU(inplace=True)]
-          in_channels = v
-        layers += module
-        trainable_layers.append(module) 
-        trainable_layers_cs += [v]
-      
-    return layers, list(zip(trainable_layers, trainable_layers_cs))
+        module = [conv2d, nn.ReLU(inplace=True)]
+
+      in_channels = out_channels
+      all_layers += module
+      trainable_layers.append(module) 
+      trainable_layers_cs += [out_channels]
+
+      if maxpl == 'M':
+        maxpool = [nn.MaxPool2d(kernel_size=2, stride=2)]
+        all_layers += maxpool
+        maps += maxpool
+      else:
+        maps += [None]
+
+    # we split up these layers to map it to our stacked network
+    # architecture:
+    # modules are used directly in the sidecar autoencoder
+    # max-pool layers become upstream maps, as they perfectly fit to this
+    # idea of having a mapping in between modules that are trained
+    # "sideways"
+    return all_layers, list(zip(
+      trainable_layers,
+      trainable_layers_cs, 
+      maps))

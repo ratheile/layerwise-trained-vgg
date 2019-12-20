@@ -1,6 +1,6 @@
 from modules import Autoencoder, \
   SupervisedAutoencoder, StackableNetwork, NetworkStack, \
-  RandomMap, ConvMap, InterpolationMap, DecoderMap
+  RandomMap, ConvMap, InterpolationMap, DecoderMap, SidecarMap
 
 from modules import SupervisedSidecarAutoencoder, VGG
 
@@ -64,7 +64,7 @@ def load_layer(layer: nn.Module, path: str):
     return layer.load_state_dict(torch_load(path))
 
 def vgg_sidecar_layer(vgg: VGG, index:int, dropout:int) -> nn.Module:
-  vgg_layers, channels = vgg.get_layer(index)
+  vgg_layers, channels, _ = vgg.get_trainable_modules()[index]
   scae = SupervisedSidecarAutoencoder(vgg_layers, channels, dropout)
   return scae
 
@@ -80,7 +80,9 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
 
   layer_configs = []
 
-  vgg = VGG()
+  # just initialize VGG, doesnt take much time
+  # even when not needed
+  vgg = VGG() 
 
   for id_l, layer in enumerate(rcfg['layers']):
 
@@ -88,11 +90,8 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
     model_type = layer['model']
     uprms = layer['upstream_params']
 
-    # Determine flags for generation
-    upstream_required = model_type == 'AE'
-
     # Prepare the model
-    model = rcfg.switch('layers/{id_l}/model', {
+    model = rcfg.switch(f'layers/{id_l}/model', {
       'AE': lambda: SupervisedAutoencoder(
         color_channels=color_channels
       ),
@@ -101,8 +100,9 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       )
     }).to(device)
 
-    # Prepare the upstream
-    if id_l < num_layers - 1 and upstream_required:
+    # Prepare the upstream for uniform autoencoder networks
+    upstream = None
+    if id_l < num_layers - 1 and model_type == 'AE':
       upstream = rcfg.switch(f'layers/{id_l}/upstream', {
         'RandomMap': lambda: RandomMap( 
           in_shape=uprms['in_shape'],
@@ -116,8 +116,11 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
         'DecoderMap': lambda: DecoderMap(model)
       }).to(device)
 
-    else:
-      upstream = None
+    # Prepare the upstream for VGG
+    elif model_type == 'VGGn':
+      _, _, upstream_map = vgg.get_trainable_modules()[id_l]
+      if upstream_map is not None:
+        upstream = SidecarMap([upstream_map])
 
     prev_stack = [(cfg.model, cfg.upstream) for cfg in layer_configs]
     prev_stack.append((model, upstream))

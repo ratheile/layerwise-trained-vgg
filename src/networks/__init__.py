@@ -1,4 +1,4 @@
-from .autoencoder import AutoencoderNet, \
+from .encodernet import AutoencoderNet, \
    LayerTrainingDefinition, \
    default_network_factory, \
    cfg_to_network

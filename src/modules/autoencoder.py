@@ -99,20 +99,19 @@ class SidecarAutoencoder(nn.Module):
 
     super().__init__()
 
-    channels = channels
     bn_args = { "eps":1e-05, "momentum":0.1, "affine":True, "track_running_stats":True }
     c2d_args = { "kernel_size":3, "stride":1, "padding":1 }
-
+    channel_mult = 2
 
     # Conv2d:      b,1c,w,h       -->  b,8c,w,h
     # MaxPool2d:   b,8c,w,h       -->  b,8c,w/2,h/2
     # Conv2d:      b,8c,w/2,h/2   -->  b,16c,w/2,h/2
     # MaxPool2d:   b,16c,w/2,h/2  -->  b,16c,w/4,h/4
-    self.upstream_layers = nn.Sequential(main_network_layer)
+    self.upstream_layers = nn.Sequential(*main_network_layer)
 
     self.encoder = nn.Sequential(
-      nn.Conv2d(in_channels=channels*8, out_channels=channels*16, **c2d_args), 
-      nn.BatchNorm2d(num_features=channels*16, **bn_args),
+      nn.Conv2d(in_channels=channels, out_channels=channels*(channel_mult**1), **c2d_args), 
+      nn.BatchNorm2d(num_features=channels*(channel_mult**1), **bn_args),
       nn.Dropout(dropout),
       nn.LeakyReLU(True),
       nn.MaxPool2d(kernel_size=2)   
@@ -149,7 +148,7 @@ class SidecarAutoencoder(nn.Module):
 class SupervisedSidecarAutoencoder(SidecarAutoencoder):
 
   def __init__(self, 
-  main_network_layer: nn.Module, 
+  main_network_layer: List[nn.Module], 
   channels:int,
   dropout: int):
 
@@ -222,6 +221,20 @@ class RandomMap(nn.Module):
     x_perm = x.view(x.size(0), -1) @ self.P_st
     x = torch.narrow(x_perm, dim=1, start=0, length=self.M)
     return x.view([x.size(0), *self.out_shape])
+
+
+class SidecarMap(nn.Module):
+
+  requires_training: bool = False
+  
+  def __init__(self, main_network_layer: List[nn.Module]):
+    super().__init__()
+    self.function = nn.Sequential(*main_network_layer)
+
+  def forward(self, x):
+    x = self.function(x)
+    return x
+    
 
 
 class InterpolationMap(nn.Module):
@@ -319,29 +332,37 @@ class NetworkStack(nn.Module):
     ])
 
   def upwards(self, x):
-    n = len(self.networks) - 2
-    for i in range(n):
-      net, map_module = self.networks[i]
+    
+    n = len(self.networks) 
+
+    # covers case where we only have 2 nets
+    if n >= 3:
+      for i in range(n-2):
+        net, map_module = self.networks[i]
+        with no_grad():
+          x = net.calculate_upstream(x)
+          # in VGG, there is no map module
+          if map_module is not None:
+            x = map_module.forward(x)
+      # end for loop
+
+    if n >= 2:
+      # the second last net
+      net, map_module = self.networks[n-2] 
       with no_grad():
         x = net.calculate_upstream(x)
-        # in VGG, there is no map module
-        if map_module is not None:
-          x = map_module.forward(x)
 
-    net, map_module = self.networks[n]
-    with no_grad():
-      x = net.calculate_upstream(x)
-
-    mmc = map_module is not None
-    if mmc and map_module.requires_training:
-      # map module forward needs to be outside of
-      # no_grad environment because of the req.
-      # training!
-      x = map_module.forward(x)
-    else:
-      with no_grad():
+      mmc = map_module is not None
+      if mmc and map_module.requires_training:
+        # map module forward needs to be outside of
+        # no_grad environment because of the req.
+        # training!
         x = map_module.forward(x)
-    # end for loop
+      else:
+        with no_grad():
+          if map_module is not None:
+            x = map_module.forward(x)
+    # end if
     return x
 
   

@@ -6,7 +6,8 @@ from .autoencoder import Autoencoder, \
   RandomMap, \
   ConvMap, \
   InterpolationMap, \
-  DecoderMap
+  DecoderMap, \
+  SidecarMap
 
 from .interpolate import Interpolate
 from .fcview import FCView
@@ -25,5 +26,6 @@ __all__ = (
   'ConvMap',
   'InterpolationMap',
   'DecoderMap',
+  'SidecarMap',
   'VGG'
 )

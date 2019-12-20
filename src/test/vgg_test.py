@@ -14,7 +14,7 @@ class Test_Vgg(unittest.TestCase):
   def test_init_sidecar_encoder(self):
     vgg = VGG()
     tmod = vgg.get_trainable_modules()
-    mod, chan = tmod[0]
+    mod, chan, maps = tmod[0]
     ssae = SupervisedSidecarAutoencoder(
       main_network_layer=mod,
       channels=chan,
