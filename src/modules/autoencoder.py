@@ -94,7 +94,8 @@ class Autoencoder(nn.Module, StackableNetwork):
 class SidecarAutoencoder(nn.Module):
   def __init__(self, 
   main_network_layer: List[nn.Module], 
-  channels:int,
+  img_size: Tuple[int,int],
+  channels: Tuple[int,int],
   dropout: int):
 
     super().__init__()
@@ -121,18 +122,33 @@ class SidecarAutoencoder(nn.Module):
     # Conv2d:       b,16c,w/2,h/2  -->  b,8c,w/2,h/2
     # Interpolate:  b,8c,w/2,h/2   -->  b,8c,w,h
     # Conv2d:       b,8c,w,h       -->  b,1c,w,h
-    self.final_conv2d = nn.Conv2d(in_channels=channels*8, out_channels=channels*1, **c2d_args)
 
     self.decoder = nn.Sequential(
       Interpolate(),                
-      nn.Conv2d(in_channels=channels*16, out_channels=channels*8, **c2d_args),       
-      nn.BatchNorm2d(num_features=channels*8, **bn_args),
+      nn.Conv2d(
+        in_channels=channels*(channel_mult**1),
+        out_channels=channels, **c2d_args
+      ),       
+      nn.BatchNorm2d(num_features=channels, **bn_args),
       nn.LeakyReLU(True),
       Interpolate(),                
-      self.final_conv2d,   
+      # TODO: reduce to pre upstream channels
+      nn.Conv2d(
+        in_channels=channels, 
+        out_channels=channels*1, **c2d_args
+      ),
       nn.BatchNorm2d(num_features=channels*1, **bn_args),
       nn.Tanh()
     )
+
+    self.img_size = img_size
+    self.channel_mult = channel_mult
+    self.channels = channels
+
+  def bottleneck_size(self) -> int:
+    return self.img_size[0] * self.img_size[1] * \
+           self.channels * (self.channel_mult ** 0)
+      
 
   def calculate_upstream(self, x):
     x = self.upstream_layers(x)
@@ -158,7 +174,7 @@ class SupervisedSidecarAutoencoder(SidecarAutoencoder):
       dropout
     )
 
-    fc_layer_size = 16*8*8*channels
+    fc_layer_size = self.bottleneck_size()
     self.supervision = nn.Sequential(
       FCView(),
       nn.Linear(in_features=fc_layer_size, out_features=100),
