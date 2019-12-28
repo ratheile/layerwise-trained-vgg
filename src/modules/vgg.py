@@ -2,24 +2,20 @@ from torch import nn, Tensor
 from typing import Tuple, List
 
 cfgs = {
-    'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+    'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512]
 }
 
 class VGG(nn.Module):
-
-  def __init__(self, num_classes=1000, init_weights=True):
-    super(VGG, self).__init__()
-    layers, trainable_modules = self.make_modules(cfgs['B'])
+  def __init__(self, num_classes: int, dropout: float, img_size: int, init_weights=True):
+    super().__init__()
+    layers, trainable_modules = self.make_modules(cfgs['A'], img_size)
     self.layers = layers
     self.trainable_modules = trainable_modules
 
-    self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
+    self.avgpool = nn.AdaptiveAvgPool2d((4, 4))
     self.classifier = nn.Sequential(
-      nn.Linear(512 * 7 * 7, 1024),
-      nn.ReLU(True),
+      nn.Linear(512 * 4 * 4, 1024),
+      nn.LeakyReLU(inplace=True),
       nn.Dropout(),
       nn.Linear(1024, num_classes),
     )
@@ -38,7 +34,7 @@ class VGG(nn.Module):
   def _initialize_weights(self):
     for m in self.modules():
       if isinstance(m, nn.Conv2d):
-        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='leaky_relu')
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)
       elif isinstance(m, nn.BatchNorm2d):
@@ -48,35 +44,54 @@ class VGG(nn.Module):
         nn.init.normal_(m.weight, 0, 0.01)
         nn.init.constant_(m.bias, 0)
  
-  def get_trainable_modules(self) -> List[Tuple[List[nn.Module], int]]:
+  def get_trainable_modules(self) -> List[Tuple[
+    List[nn.Module],
+    Tuple[int, int],
+    int,
+    List[nn.Module]
+  ]]:
     return self.trainable_modules
 
-  def make_modules(self, cfg, batch_norm=False):
+  def make_modules(self, cfg, img_size, batch_norm=False) -> Tuple[
+    List[nn.Module],
+    List[Tuple[
+      List[nn.Module],
+      Tuple[int, int],
+      int,
+      List[nn.Module]
+    ]]
+  ]:
+
     all_layers = []
     trainable_layers = [] # only add trainable blocks to this
     trainable_layers_cs = [] # channel sizes
+    trainable_layers_is = [] # image sizes
     maps = [] # these layers are untrainable maps
 
-    in_channels = 3
+    in_channels = 3  # number of input channels
 
     mp =  (list(map(lambda x: x if x == 'M' else None, cfg)) + [None])[1:]
     cfg = list(filter(lambda t: t[0] != 'M',zip(cfg, mp)))
     
     for (out_channels, maxpl) in cfg:
 
-      conv2d = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+      conv2d = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=1)
       if batch_norm:
-        module = [conv2d, nn.BatchNorm2d(out_channels), nn.ReLU(inplace=True)]
+        module = [conv2d, nn.BatchNorm2d(out_channels), nn.LeakyReLU(inplace=True)]
       else:
-        module = [conv2d, nn.ReLU(inplace=True)]
+        module = [conv2d, nn.LeakyReLU(inplace=True)]
 
-      in_channels = out_channels
+      
       all_layers += module
       trainable_layers.append(module) 
-      trainable_layers_cs += [out_channels]
+      trainable_layers_cs += [(in_channels, out_channels)]
+      trainable_layers_is += [img_size]
+      in_channels = out_channels
 
       if maxpl == 'M':
         maxpool = [nn.MaxPool2d(kernel_size=2, stride=2)]
+        img_size /= 2
+        trainable_layers_is[-1] = img_size
         all_layers += maxpool
         maps += maxpool
       else:
@@ -90,5 +105,6 @@ class VGG(nn.Module):
     # "sideways"
     return all_layers, list(zip(
       trainable_layers,
-      trainable_layers_cs, 
+      trainable_layers_cs,
+      trainable_layers_is, 
       maps))

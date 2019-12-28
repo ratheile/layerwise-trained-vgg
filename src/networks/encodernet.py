@@ -1,6 +1,4 @@
-from modules import Autoencoder, \
-  SupervisedAutoencoder, StackableNetwork, NetworkStack, \
-  RandomMap, ConvMap, InterpolationMap, DecoderMap, SidecarMap
+from modules import StackableNetwork, NetworkStack, SidecarMap
 
 from modules import SupervisedSidecarAutoencoder, VGG
 
@@ -63,9 +61,9 @@ def save_layer(layer: nn.Module, path:str):
 def load_layer(layer: nn.Module, path: str):
     return layer.load_state_dict(torch_load(path))
 
-def vgg_sidecar_layer(vgg: VGG, index:int, dropout:int) -> nn.Module:
-  vgg_layers, channels, _ = vgg.get_trainable_modules()[index]
-  scae = SupervisedSidecarAutoencoder(vgg_layers, channels, dropout)
+def vgg_sidecar_layer(vgg: VGG, index:int, dropout:float) -> nn.Module:
+  vgg_layers, channels, img_size, _ = vgg.get_trainable_modules()[index]
+  scae = SupervisedSidecarAutoencoder(vgg_layers, img_size, channels, dropout)
   return scae
 
 
@@ -77,12 +75,16 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
   learning_rate = rcfg['learning_rate']
   weight_decay = rcfg['weight_decay']
   color_channels = rcfg['color_channels']
+  vgg_dropout = rcfg['vgg_dropout']
+  dataset_name = rcfg['dataset']
+  img_size = gcfg[f'datasets/{dataset_name}/img_size']
+  num_classes = gcfg[f'datasets/{dataset_name}/num_classes']
 
   layer_configs = []
 
   # just initialize VGG, doesnt take much time
   # even when not needed
-  vgg = VGG() 
+  vgg = VGG(num_classes=num_classes, dropout=vgg_dropout, img_size=img_size) 
 
   for id_l, layer in enumerate(rcfg['layers']):
 
@@ -118,7 +120,7 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
 
     # Prepare the upstream for VGG
     elif model_type == 'VGGn':
-      _, _, upstream_map = vgg.get_trainable_modules()[id_l]
+      _, _, _, upstream_map = vgg.get_trainable_modules()[id_l]
       if upstream_map is not None:
         upstream = SidecarMap([upstream_map])
 
@@ -161,46 +163,6 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
 
   return layer_configs
 
-def default_network_factory(
-    gcfg: ConfigLoader,
-    rcfg: ConfigLoader
-  ) -> List[LayerTrainingDefinition]:
-
-  device = gcfg['device']
-  learning_rate = rcfg['learning_rate']
-  weight_decay = rcfg['weight_decay']
-  color_channels = rcfg['color_channels']
-
-  model_l1 = SupervisedAutoencoder(color_channels=color_channels).to(device)
-  model_l2 = SupervisedAutoencoder(color_channels=color_channels).to(device)
-
-  # TODO: Generate layers programmatically and make it depend on layers parameter
-  model_t1 = NetworkStack([
-    (model_l1, None),
-    ]).to(device)
-
-  model_t2 = NetworkStack([
-    (model_l1, RandomMap(in_shape=(24,16,16), out_shape=(3,32,32)).to(device)),
-    (model_l2, None),
-    ]).to(device)
-
-  optimizer_t1 = Adam(
-    model_l1.parameters(), 
-    lr=learning_rate, 
-    weight_decay=weight_decay
-  )
-
-  optimizer_t2 = Adam(
-    model_l2.parameters(), 
-    lr=learning_rate, 
-    weight_decay=weight_decay
-  )
-  layer_configs = [
-    LayerTrainingDefinition(num_epochs=1, model=model_t1, optimizer=optimizer_t1),
-    LayerTrainingDefinition(num_epochs=100, model=model_t2, optimizer=optimizer_t2)
-  ]
-
-  return layer_configs
 
 class AutoencoderNet():
 

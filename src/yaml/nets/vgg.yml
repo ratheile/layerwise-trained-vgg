@@ -5,6 +5,7 @@ supervised_ratio: 0.05
 batch_size: 1000
 test_every_n_epochs: 10
 pred_loss_weight: 0.3
+vgg_dropout: 0.3
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
