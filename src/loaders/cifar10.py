@@ -27,18 +27,41 @@ def semi_supervised_cifar10(
   download=False
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:    
 
-
+  
   img_transform = transforms.Compose([
-      transforms.ToTensor(),
-      transforms.Normalize([0.5], [0.5])
-    ])
+    transforms.ToTensor(),
+    transforms.Normalize([0.5], [0.5])
+  ])
 
-  ds_train = CIFAR10(
+  # img_transform = transforms.Compose([
+  #   transforms.RandomCrop(32, padding=4),
+  #   transforms.RandomHorizontalFlip(),                                
+  #   transforms.ToTensor(),
+  #   transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))
+  # ])
+
+  img_transform_s = transforms.Compose([
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomRotation(45),
+    transforms.RandomHorizontalFlip(),
+    transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),                                
+    transforms.ToTensor(),
+    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284)) # TODO: WHY???
+  ])
+
+  ds_train_us = CIFAR10(
       root=root,
       transform=img_transform,
       train=True,
       download=download
     )
+
+  ds_train_s = CIFAR10(
+      root=root,
+      transform=img_transform,
+      train=True,
+      download=download
+  )
 
   ds_test = CIFAR10(
       root=root,
@@ -47,7 +70,7 @@ def semi_supervised_cifar10(
       download=download
     )
 
-  ds_size = len(ds_train)
+  ds_size = len(ds_train_s)
   assert supervised_ratio < 1 and supervised_ratio > 0
   ss_ds_len = int(ds_size * supervised_ratio)
 
@@ -64,12 +87,12 @@ def semi_supervised_cifar10(
 
   logging.info(f"Dataset (supervised={ss_ds_len}/total={ds_size}) us_bs={us_bs} s_bs={s_bs}")
 
-  unsupervised_loader = DataLoader(ds_train, 
+  unsupervised_loader = DataLoader(ds_train_us, 
     sampler=unsupervised_sampler,
     batch_size=us_bs
   )
 
-  supervised_loader = DataLoader(ds_train, 
+  supervised_loader = DataLoader(ds_train_s, 
     sampler=supervised_sampler,
     batch_size=s_bs
   )

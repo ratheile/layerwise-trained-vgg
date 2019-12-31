@@ -116,28 +116,52 @@ class AutoencoderNet():
 
 
     self.writer.add_figure('decoded_imgs', fig, global_step=epoch)
+  
+  def measure_time(self, t_start):
+    current = time.time_ns()
+    delta = (current - t_start) / 1e9
+    return current, delta
+
+  def train_vgg_classifier(self):
+    pass
+
+  def test_vgg_classifier(self):
+    pass
 
   def train(self, epoch: int, global_epoch:int,  config: LayerTrainingDefinition):
     #TODO: check if still necessary self.model.train()
-    for ith_batch in range(len(self.unsupvised_loader)):
 
-      # _s means supervised _us unsupervised
-      iter_us = iter(self.unsupvised_loader)
-      iter_s = iter(self.supervised_loader)
+    tot_t_dataload = 0
+    tot_t_upstream = 0
+    tot_t_loss = 0
+    tot_t_optim = 0
+
+    # _s means supervised _us unsupervised
+    iter_us = iter(self.unsupvised_loader)
+    iter_s = iter(self.supervised_loader)
+    n_batches = len(self.unsupvised_loader)
+
+    for ith_batch in range(n_batches):
+      t_start = time.time_ns()
 
       img_us, _ = (lambda d: (d[0], d[1]))(next(iter_us))
       img_s, label_s = (lambda d: (d[0], d[1]))(next(iter_s))
 
+      dev_img_us = img_us.to(self.device)
+      dev_img_s = img_s.to(self.device)
+      dev_label = label_s.to(self.device)
+
+      t_start, t_delta = self.measure_time(t_start)
+      tot_t_dataload += t_delta
+
       # copy all vars to device and calculate the topmost stack representation
       # TODO: avoid calculating this representation twice (here and in forward())
+
       with torch.no_grad():
-        t_start = time.process_time_ns()
-        dev_img_us = config.stack.upwards(img_us.to(self.device))
-        dev_img_s = config.stack.upwards(img_s.to(self.device))
-        t_end = time.process_time_ns()
-        t_total = t_start - t_end
-        logging.info("Upsream calculates in: {t_total}")
-      dev_label = label_s.to(self.device)
+        dev_img_us = config.stack.upwards(dev_img_us)
+        dev_img_s = config.stack.upwards(dev_img_s)
+        t_start, t_delta = self.measure_time(t_start)
+        tot_t_upstream += t_delta
       
       decoding_s, prediction = config.model(dev_img_s)
       decoding_us, _ = config.model(dev_img_us)
@@ -150,22 +174,33 @@ class AutoencoderNet():
       alpha = self.pred_loss_weight
       combo_loss = (loss_dc_s + loss_dc_us) * (1-alpha) + loss_pred * alpha
 
+      t_start, t_delta = self.measure_time(t_start)
+      tot_t_loss += t_delta
       # ===================backward====================
       config.optimizer.zero_grad()
       combo_loss.backward()
       config.optimizer.step()
 
+      t_start, t_delta = self.measure_time(t_start)
+      tot_t_optim += t_delta
     # ===================log========================
     # Calculate Accuracy
     _, predicted = torch_max(prediction.data, 1)
     accuracy = (predicted.cpu().numpy() == label_s.numpy()).sum() / len(label_s)
 
-    logging.info('Epoch [{}/{}] Train Loss:{:.4f} Train Acc:{:.4f}'
-      .format(
+    logging.info((
+        'Epoch [{}/{}] Train Loss:{:.4f} ' +
+        'Train Acc:{:.4f} ' +
+        'Time(Loading|Upstream|Loss|Optim):  {:.2f} {:.2f} {:.2f} {:.2f}'
+      ).format(
           epoch+1,
           config.num_epochs,
           combo_loss.item(),
-          accuracy
+          accuracy,
+          tot_t_dataload,
+          tot_t_upstream, 
+          tot_t_loss,
+          tot_t_optim 
         )
       )
     
@@ -219,10 +254,10 @@ class AutoencoderNet():
     self.writer.add_scalar('test_loss', test_loss, global_step=global_epoch)
     self.writer.add_scalar('test_accuracy', test_acc, global_step=global_epoch)
 
-    if epoch % plot_every_n_epochs == 0:
-      self.plot_img(real_imgs=dev_img.cpu().numpy(),
-                    dc_imgs=decoding.cpu().detach().numpy(),
-                    epoch=global_epoch)
+    # if epoch % plot_every_n_epochs == 0:
+    #   self.plot_img(real_imgs=dev_img.cpu().numpy(),
+    #                 dc_imgs=decoding.cpu().detach().numpy(),
+    #                 epoch=global_epoch)
 
   def train_test(self):
     total_epochs = 0
@@ -244,3 +279,6 @@ class AutoencoderNet():
           )
           fn = f'{base}_stack.pickle'
           save_layer(config.stack, fn)
+      
+      else:
+        logging.info('### Use pretrained tensors for {} ###'.format(id_c))

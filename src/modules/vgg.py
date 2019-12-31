@@ -16,9 +16,11 @@ class VGG(nn.Module):
     self.classifier = nn.Sequential(
       nn.Linear(512 * 4 * 4, 1024),
       nn.LeakyReLU(inplace=True),
-      nn.Dropout(),
+      nn.Dropout(dropout),
       nn.Linear(1024, num_classes),
     )
+
+    self.vgg_dropout = dropout
 
     if init_weights:
         self._initialize_weights()
@@ -77,7 +79,10 @@ class VGG(nn.Module):
 
       conv2d = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=1)
       if batch_norm:
-        module = [conv2d, nn.BatchNorm2d(out_channels), nn.LeakyReLU(inplace=True)]
+        module = [conv2d,
+          nn.BatchNorm2d(out_channels),
+          nn.LeakyReLU(inplace=True),
+        ]
       else:
         module = [conv2d, nn.LeakyReLU(inplace=True)]
 

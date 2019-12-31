@@ -1,9 +1,9 @@
-learning_rate: 0.02
+learning_rate: 0.001
 weight_decay: 0.00001 # ADAM decay
 color_channels: 3
 supervised_ratio: 0.5
-batch_size: 100
-test_every_n_epochs: 10
+batch_size: 128
+test_every_n_epochs: 1
 pred_loss_weight: 0.5
 vgg_dropout: 0.3
 
@@ -17,84 +17,84 @@ prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
 layers:
 
   # Layer 0 (64)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.3
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    # pretraining_load: trained_models/cifar10/layer_0_stack.pickle
+    # pretraining_load: trained_models/cifar10_50/layer_0_stack.pickle
     # pretraining_store: null
     pretraining_load: null 
-    pretraining_store: trained_models/cifar10 
+    pretraining_store: trained_models/cifar10_50 
     upstream_params: null
 
   # Layer 1 (64)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.3
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: trained_models/cifar10 
+    pretraining_store: trained_models/cifar10_50 
     upstream_params: null
 
   # Layer 2 (64)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.3
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: trained_models/cifar10 
+    pretraining_store: trained_models/cifar10_50 
     upstream_params: null
 
   # Layer 3 (128)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.3
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: trained_models/cifar10 
+    pretraining_store: trained_models/cifar10_50 
     upstream_params: null
 
   # Layer 4 (128)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.3
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: trained_models/cifar10 
+    pretraining_store: trained_models/cifar10_50 
     upstream_params: null
 
   # Layer 5 (256)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.3
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: trained_models/cifar10 
+    pretraining_store: trained_models/cifar10_50 
     upstream_params: null
 
   # Layer 6 (256)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.3
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: trained_models/cifar10 
+    pretraining_store: trained_models/cifar10_50 
     upstream_params: null
 
   # Layer 8 (256)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.3
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: trained_models/cifar10 
+    pretraining_store: trained_models/cifar10_50 
     upstream_params: null
   
     # VGG Linear Layer (256)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.3
     model: VGGlinear # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: trained_models/cifar10 
+    pretraining_store: trained_models/cifar10_50 
     upstream_params: null

@@ -29,7 +29,9 @@ class SidecarAutoencoder(nn.Module):
     # MaxPool2d:   b,16c,w/2,h/2  -->  b,16c,w/4,h/4
     self.upstream_layers = nn.Sequential(*main_network_layer)
 
+    # First dropout layer is for upstream training, but should not be there in upstream processing
     self.encoder = nn.Sequential(
+      nn.Dropout(dropout),
       nn.MaxPool2d(kernel_size=2, stride=2),
       nn.Conv2d(in_channels=num_channels, out_channels=num_channels*(channel_mult), **c2d_args), 
       nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),

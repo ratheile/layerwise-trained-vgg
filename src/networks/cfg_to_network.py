@@ -58,7 +58,8 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       ),
       'VGGn': lambda: vgg_sidecar_layer(vgg, id_l,
         dropout=dropout_rate
-      )
+      ),
+      'VGGlinear': lambda: vgg
     }).to(device)
 
     # Prepare the upstream for uniform autoencoder networks
@@ -83,20 +84,26 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       if upstream_map is not None:
         upstream = SidecarMap([upstream_map])
 
-    prev_stack = [(cfg.model, cfg.upstream) for cfg in layer_configs]
-    prev_stack.append((model, upstream))
-    stack = NetworkStack(prev_stack).to(device)
+    if model_type != 'VGGlinear':
+      prev_stack = [(cfg.model, cfg.upstream) for cfg in layer_configs]
+      prev_stack.append((model, upstream))
+      stack = NetworkStack(prev_stack).to(device)
 
-    # load stack from pickle if required
-    stack_path = layer['pretraining_load']
-    if stack_path is not None:
-      load_layer(stack, stack_path)
+      # load stack from pickle if required
+      stack_path = layer['pretraining_load']
+      if stack_path is not None:
+        load_layer(stack, stack_path)
 
-    # some upstream maps require training
-    if upstream is not None and upstream.requires_training:
-      trainable_params = list(model.parameters()) + list(upstream.parameters())
-    else:
-      trainable_params = model.parameters()
+      # some upstream maps require training
+      if upstream is not None and upstream.requires_training:
+        trainable_params = list(model.parameters()) + list(upstream.parameters())
+      else:
+        trainable_params = model.parameters()
+      
+    elif model_type == 'VGGlinear':
+      stack = None
+      model = vgg
+
 
     optimizer = Adam(
       trainable_params,
