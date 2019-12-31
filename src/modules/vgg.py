@@ -90,8 +90,7 @@ class VGG(nn.Module):
 
       if maxpl == 'M':
         maxpool = [nn.MaxPool2d(kernel_size=2, stride=2)]
-        img_size /= 2
-        trainable_layers_is[-1] = img_size
+        img_size = int(img_size / 2)
         all_layers += maxpool
         maps += maxpool
       else:

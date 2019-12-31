@@ -1,11 +1,9 @@
-from .encodernet import AutoencoderNet, \
-   LayerTrainingDefinition, \
-   default_network_factory, \
-   cfg_to_network
+from .encodernet import AutoencoderNet
+from .layer_training_def import LayerTrainingDefinition
+from .cfg_to_network import cfg_to_network
 
 __all__ = (
     'AutoencoderNet',
     'LayerTrainingDefinition',
-    'default_network_factory',
     'cfg_to_network'
   )

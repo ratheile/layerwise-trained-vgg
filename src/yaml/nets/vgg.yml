@@ -19,10 +19,10 @@ layers:
     dropout_rate: 0.3
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    # pretraining_load: trained_models/cifar10/layer_0_stack.pickle
-    # pretraining_store: null
-    pretraining_load: null 
-    pretraining_store: trained_models/cifar10 
+    pretraining_load: trained_models/cifar10/layer_0_stack.pickle
+    pretraining_store: null
+    # pretraining_load: null 
+    # pretraining_store: trained_models/cifar10 
     upstream_params: null
 
   - num_epoch: 50
