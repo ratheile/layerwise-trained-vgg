@@ -1,13 +1,18 @@
 from .autoencoder import Autoencoder, \
-  SupervisedSidecarAutoencoder, \
-  SupervisedAutoencoder, \
-  StackableNetwork, \
-  NetworkStack, \
-  RandomMap, \
+  SupervisedAutoencoder
+
+from .stackable_network import StackableNetwork
+
+from .network_stack import NetworkStack
+
+from .maps import RandomMap, \
   ConvMap, \
   InterpolationMap, \
   DecoderMap, \
   SidecarMap
+
+from .vgg_autoencoder import SupervisedSidecarAutoencoder, \
+  SidecarAutoencoder
 
 from .interpolate import Interpolate
 from .fcview import FCView
