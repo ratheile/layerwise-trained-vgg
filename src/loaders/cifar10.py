@@ -29,19 +29,19 @@ def semi_supervised_cifar10(
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:    
 
   
-  img_transform = transforms.Compose([
+  img_transform_light = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize([0.5], [0.5])
   ])
 
-  # img_transform = transforms.Compose([
-  #   transforms.RandomCrop(32, padding=4),
-  #   transforms.RandomHorizontalFlip(),                                
-  #   transforms.ToTensor(),
-  #   transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))
-  # ])
+  img_transform_med = transforms.Compose([
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomHorizontalFlip(),                                
+    transforms.ToTensor(),
+    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))
+  ])
 
-  img_transform_s = transforms.Compose([
+  img_transform_heavy = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomRotation(45),
     transforms.RandomHorizontalFlip(),
@@ -52,21 +52,21 @@ def semi_supervised_cifar10(
 
   ds_train_us = CIFAR10(
       root=root,
-      transform=img_transform_s,
+      transform=img_transform_med,
       train=True,
       download=download
     )
 
   ds_train_s = CIFAR10(
       root=root,
-      transform=img_transform_s,
+      transform=img_transform_med,
       train=True,
       download=download
   )
 
   ds_test = CIFAR10(
       root=root,
-      transform=img_transform_s,
+      transform=img_transform_med,
       train=False,
       download=download
     )
