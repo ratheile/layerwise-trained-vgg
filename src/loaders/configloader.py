@@ -1,5 +1,6 @@
 from __future__ import annotations # for -> ConfigLoader typedef
 import yaml
+import json
 from yaml import FullLoader
 import os
 from collections.abc import Iterable
@@ -26,6 +27,9 @@ class ConfigLoader(object):
     value = self.__getitem__(key)
     return options[value]()
   
+  def to_json(self):
+    return json.dumps(self.env)   
+
   def __repr__(self):
     return yaml.dump(self.env)
 

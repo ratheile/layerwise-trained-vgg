@@ -73,8 +73,12 @@ class AutoencoderNet():
 
     self.layer_configs = cfg_to_network(gcfg, rcfg)
     assert len(self.supervised_loader) == len(self.unsupvised_loader)
+    
+    model_detail_name = os.path.split(rcfg['model_path'])[-1]
+    self.writer = SummaryWriter(comment='_' + model_detail_name)
+    self.writer.add_text("run_config", rcfg.to_json())
+    self.writer.add_text("environment", gcfg.to_json())
 
-    self.writer = SummaryWriter()
     """
     TODO: Implement in factory method to show sizes when network is built
     summary(self.model, input_size=(color_channels,img_size,img_size))
@@ -304,8 +308,10 @@ class AutoencoderNet():
         )
       )
     
-    self.writer.add_scalar('train_loss', combo_loss.item(), global_step=global_epoch)
-    self.writer.add_scalar('train_accuracy', accuracy, global_step=global_epoch)
+    self.writer.add_scalar('loss_total/train', combo_loss.item(), global_step=global_epoch)
+    self.writer.add_scalar(f'loss_{config.layer_name}/train', combo_loss.item(), global_step=epoch)
+    self.writer.add_scalar('accuracy_total/train', accuracy, global_step=global_epoch)
+    self.writer.add_scalar(f'accuracy_{config.layer_name}/train', accuracy, global_step=epoch)
     
   def test(self, 
           epoch: int, 
@@ -316,6 +322,9 @@ class AutoencoderNet():
     # TODO: figure out if necessaryself self.model.eval()
     test_loss = 0
     test_acc = 0
+
+    # execution times
+    t_start = time.time_ns()
 
     with torch.no_grad():
       img: Tensor = None
@@ -342,17 +351,21 @@ class AutoencoderNet():
     self.test_losses.append(test_loss)
     self.test_accs.append(test_acc)
 
-    logging.info('Epoch [{}/{}] Test Loss:{:.4f} Test Acc:{:.4f}'
+    t_start, t_delta = self.measure_time(t_start)
+    logging.info('Epoch [{}/{}] Test Loss:{:.4f} Test Acc:{:.4f} Time: {:.2f}'
       .format(
         epoch + 1,
         config.num_epochs,
         test_loss,
-        test_acc
+        test_acc,
+        t_delta
       )
     )
 
-    self.writer.add_scalar('test_loss', test_loss, global_step=global_epoch)
-    self.writer.add_scalar('test_accuracy', test_acc, global_step=global_epoch)
+    self.writer.add_scalar('loss_total/test', test_loss, global_step=global_epoch)
+    self.writer.add_scalar(f'loss_{config.layer_name}/test', test_loss, global_step=epoch)
+    self.writer.add_scalar('accuracy_total/test', test_acc, global_step=global_epoch)
+    self.writer.add_scalar(f'accuracy_{config.layer_name}/test', test_acc, global_step=epoch)
 
     # if epoch % plot_every_n_epochs == 0:
     #   self.plot_img(real_imgs=dev_img.cpu().numpy(),

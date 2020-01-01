@@ -23,7 +23,7 @@ layers:
 
   # Layer 0 (64)
   - num_epoch: 50
-    dropout_rate: 0.5
+    dropout_rate: 0.9
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load: null 
@@ -32,7 +32,7 @@ layers:
 
   # Layer 1 (64)
   - num_epoch: 50
-    dropout_rate: 0.5
+    dropout_rate: 0.8
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -41,7 +41,7 @@ layers:
 
   # Layer 2 (64)
   - num_epoch: 50
-    dropout_rate: 0.5
+    dropout_rate: 0.7
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -50,7 +50,7 @@ layers:
 
   # Layer 3 (128)
   - num_epoch: 50
-    dropout_rate: 0.5
+    dropout_rate: 0.6
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
