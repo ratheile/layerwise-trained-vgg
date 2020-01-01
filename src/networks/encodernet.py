@@ -1,6 +1,6 @@
 from modules import StackableNetwork, NetworkStack, SidecarMap
 
-from .layer_training_def import LayerTrainingDefinition
+from .layer_training_def import LayerTrainingDefinition, LayerType
 from .cfg_to_network import cfg_to_network
 
 from loaders import semi_supervised_mnist, semi_supervised_cifar10
@@ -122,11 +122,111 @@ class AutoencoderNet():
     delta = (current - t_start) / 1e9
     return current, delta
 
-  def train_vgg_classifier(self):
-    pass
+  def train_vgg_classifier(self, epoch: int, global_epoch:int,  config: LayerTrainingDefinition):
+    #TODO: check if still necessary self.model.train()
 
-  def test_vgg_classifier(self):
-    pass
+    tot_t_dataload = 0
+    tot_t_loss = 0
+    tot_t_optim = 0
+
+    # _s means supervised _us unsupervised
+    iter_us = iter(self.unsupvised_loader)
+    iter_s = iter(self.supervised_loader)
+    n_batches = len(self.unsupvised_loader)
+
+    for ith_batch in range(n_batches):
+      t_start = time.time_ns()
+
+      img_s, label_s = (lambda d: (d[0], d[1]))(next(iter_s))
+
+      dev_img_s = img_s.to(self.device)
+      dev_label = label_s.to(self.device)
+
+      t_start, t_delta = self.measure_time(t_start)
+      tot_t_dataload += t_delta
+
+      # copy all vars to device and calculate the topmost stack representation
+      # TODO: avoid calculating this representation twice (here and in forward())
+
+      prediction = config.model(dev_img_s)
+      loss_pred = self.pred_criterion(prediction, dev_label)
+
+      t_start, t_delta = self.measure_time(t_start)
+      tot_t_loss += t_delta
+      # ===================backward====================
+      config.optimizer.zero_grad()
+      loss_pred.backward()
+      config.optimizer.step()
+
+      t_start, t_delta = self.measure_time(t_start)
+      tot_t_optim += t_delta
+    # ===================log========================
+    # Calculate Accuracy
+    _, predicted = torch_max(prediction.data, 1)
+    accuracy = (predicted.cpu().numpy() == label_s.numpy()).sum() / len(label_s)
+
+    logging.info((
+        'Epoch [{}/{}] Train Loss:{:.4f} ' +
+        'Train Acc:{:.4f} ' +
+        'Time(Loading|Loss|Optim):  {:.2f} {:.2f} {:.2f}'
+      ).format(
+          epoch+1,
+          config.num_epochs,
+          loss_pred.item(),
+          accuracy,
+          tot_t_dataload,
+          tot_t_loss,
+          tot_t_optim 
+        )
+      )
+    
+    self.writer.add_scalar('train_loss', loss_pred.item(), global_step=global_epoch)
+    self.writer.add_scalar('train_accuracy', accuracy, global_step=global_epoch)
+    
+  def test_vgg_classifier(self, 
+          epoch: int, 
+          global_epoch:int, 
+          config: LayerTrainingDefinition,
+          plot_every_n_epochs=1):
+
+    # TODO: figure out if necessaryself self.model.eval()
+    test_loss = 0
+    test_acc = 0
+
+    with torch.no_grad():
+      img: Tensor = None
+      labels: Tensor = None
+      for data in self.test_loader:
+        img, label = data[0], data[1]
+
+        # copy all vars to device and calculate the topmost stack representation
+        # TODO: avoid calculating this representation twice (here and in forward())
+        dev_img = img.to(self.device)
+        dev_label = label.to(self.device)
+
+        # ===================Forward=====================
+        prediction = config.model(dev_img)
+        loss_pred = self.pred_criterion(prediction, dev_label)
+        # Calculate Test Loss
+        test_loss += loss_pred.item() / (len(self.test_loader))
+        # Calculate Accuracy
+        _, predicted = torch_max(prediction.data, 1)
+        test_acc += (predicted.cpu().numpy() == label.numpy()).sum() / (len(self.test_loader) * len(label))
+
+    self.test_losses.append(test_loss)
+    self.test_accs.append(test_acc)
+
+    logging.info('Epoch [{}/{}] Test Loss:{:.4f} Test Acc:{:.4f}'
+      .format(
+        epoch + 1,
+        config.num_epochs,
+        test_loss,
+        test_acc
+      )
+    )
+
+    self.writer.add_scalar('test_loss', test_loss, global_step=global_epoch)
+    self.writer.add_scalar('test_accuracy', test_acc, global_step=global_epoch)
 
   def train(self, epoch: int, global_epoch:int,  config: LayerTrainingDefinition):
     #TODO: check if still necessary self.model.train()
@@ -265,10 +365,16 @@ class AutoencoderNet():
       if config.pretraining_load is None:
         logging.info('### Training layer {} ###'.format(id_c)) 
         for epoch in range(config.num_epochs):
-          self.train(epoch, config=config, global_epoch=total_epochs)
+          if config.layer_type == LayerType.Stack:
+            self.train(epoch, config=config, global_epoch=total_epochs)
+          elif config.layer_type == LayerType.VGGlinear:
+            self.train_vgg_classifier(epoch, config=config, global_epoch=total_epochs)
           total_epochs += 1
           if total_epochs % self.test_every_n_epochs == 0:
-            self.test(epoch, config=config, global_epoch=total_epochs)
+            if config.layer_type == LayerType.Stack:
+              self.test(epoch, config=config, global_epoch=total_epochs)
+            elif config.layer_type == LayerType.VGGlinear:
+              self.test_vgg_classifier(epoch, config=config, global_epoch=total_epochs)
         # end epoch loop
 
 

@@ -1,3 +1,5 @@
+# adapted from https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py
+import torch
 from torch import nn, Tensor
 from typing import Tuple, List
 
@@ -9,7 +11,7 @@ class VGG(nn.Module):
   def __init__(self, num_classes: int, dropout: float, img_size: int, init_weights=True):
     super().__init__()
     layers, trainable_modules = self.make_modules(cfgs['A'], img_size)
-    self.layers = layers
+    self.layers = nn.Sequential(*layers)
     self.trainable_modules = trainable_modules
 
     self.avgpool = nn.AdaptiveAvgPool2d((4, 4))

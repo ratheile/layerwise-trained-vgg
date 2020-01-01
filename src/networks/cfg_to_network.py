@@ -13,7 +13,7 @@ from modules import NetworkStack
 
 from loaders import ConfigLoader
 
-from .layer_training_def import LayerTrainingDefinition
+from .layer_training_def import LayerTrainingDefinition, LayerType
 
 from typing import List, IO
 
@@ -84,7 +84,9 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       if upstream_map is not None:
         upstream = SidecarMap([upstream_map])
 
+    # Prepare the optimizer for various networks
     if model_type != 'VGGlinear':
+      layer_type = LayerType.Stack
       prev_stack = [(cfg.model, cfg.upstream) for cfg in layer_configs]
       prev_stack.append((model, upstream))
       stack = NetworkStack(prev_stack).to(device)
@@ -100,10 +102,12 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       else:
         trainable_params = model.parameters()
       
+
     elif model_type == 'VGGlinear':
       stack = None
       model = vgg
-
+      trainable_params = list(vgg.classifier.parameters())
+      layer_type = LayerType.VGGlinear
 
     optimizer = Adam(
       trainable_params,
@@ -115,6 +119,7 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
         
     layer_configs.append(
       LayerTrainingDefinition(
+        layer_type=layer_type,
         layer_name=layer_name,
         num_epochs=layer['num_epoch'], 
         upstream=upstream,

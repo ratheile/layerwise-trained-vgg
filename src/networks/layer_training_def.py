@@ -2,9 +2,15 @@ from torch import nn
 from dataclasses import dataclass
 from torch.optim import Optimizer
 from modules import NetworkStack
+from enum import Enum
+
+class LayerType(Enum):
+  VGGlinear = 0
+  Stack = 1
 
 @dataclass
 class LayerTrainingDefinition:
+  layer_type: LayerType = None
   layer_name: str = None
   #config
   num_epochs: int = 0
