@@ -32,11 +32,18 @@ class SidecarAutoencoder(nn.Module):
     # First dropout layer is for upstream training, but should not be there in upstream processing
     self.encoder = nn.Sequential(
       nn.Dropout(dropout),
+      
       nn.MaxPool2d(kernel_size=2, stride=2),
       nn.Conv2d(in_channels=num_channels, out_channels=num_channels*(channel_mult), **c2d_args), 
       nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),
       nn.Dropout(dropout),
       nn.LeakyReLU(True),   
+
+      nn.MaxPool2d(kernel_size=2, stride=2),
+      nn.Conv2d(in_channels=num_channels*(channel_mult), out_channels=num_channels*(channel_mult**2), **c2d_args), 
+      nn.BatchNorm2d(num_features=num_channels*(channel_mult**2), **bn_args),
+      nn.Dropout(dropout),
+      nn.LeakyReLU(True),  
     )
 
     # Interpolate:  b,16c,w/4,h/4  -->  b,16c,w/2,h/2
@@ -45,10 +52,17 @@ class SidecarAutoencoder(nn.Module):
     # Conv2d:       b,8c,w,h       -->  b,1c,w,h
 
     self.decoder = nn.Sequential(
+
+      Interpolate(),                
+      nn.Conv2d(in_channels=num_channels*(channel_mult**2), out_channels=num_channels*(channel_mult), **c2d_args),       
+      nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),
+      nn.LeakyReLU(True),
+
       Interpolate(),                
       nn.Conv2d(in_channels=num_channels*(channel_mult), out_channels=num_channels, **c2d_args),       
       nn.BatchNorm2d(num_features=num_channels, **bn_args),
       nn.LeakyReLU(True),
+
       nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
       nn.BatchNorm2d(num_features=in_channels, **bn_args),
       nn.Sigmoid()
@@ -59,7 +73,7 @@ class SidecarAutoencoder(nn.Module):
     self.num_channels = num_channels
 
   def bottleneck_size(self) -> int:
-    return int((self.img_size/2)**2 * (self.num_channels * self.channel_mult))
+    return int((self.img_size/4)**2 * (self.num_channels * self.channel_mult**2))
       
   def calculate_upstream(self, x):
     x = self.upstream_layers(x)
