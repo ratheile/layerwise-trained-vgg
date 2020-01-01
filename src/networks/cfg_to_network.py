@@ -72,8 +72,8 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       'VGGlinear': lambda: vgg
     }).to(device)
 
-    # Prepare the upstream for uniform autoencoder networks
     upstream = None
+    # Prepare the upstream for uniform autoencoder networks
     if id_l < num_layers - 1 and model_type == 'AE':
       upstream = rcfg.switch(f'layers/{id_l}/upstream', {
         'RandomMap': lambda: RandomMap( 
@@ -94,14 +94,20 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       if upstream_map is not None:
         upstream = SidecarMap([upstream_map])
 
-    # Prepare the optimizer for various networks
+    # Prepare the optimizer / stack for various networks
     if model_type != 'VGGlinear':
       layer_type = LayerType.Stack
+
+      # Prepare learnable scalars
+      tp_alpha = nn.Parameter(torch.rand(1).to(device), requires_grad=True)
+      trainable_params = [tp_alpha]
+      
+      # Init stack out of layers
       prev_stack = [(cfg.model, cfg.upstream) for cfg in layer_configs]
       prev_stack.append((model, upstream))
       stack = NetworkStack(prev_stack).to(device)
 
-      # load stack from pickle if required
+      # load stack tensors from pickle if required
       stack_name = layer['pretraining_load']
       if stack_name is not None:
         stack_path = '{}/{}'.format(model_path, stack_name)
@@ -109,9 +115,9 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
 
       # some upstream maps require training
       if upstream is not None and upstream.requires_training:
-        trainable_params = list(model.parameters()) + list(upstream.parameters())
+        trainable_params += list(model.parameters()) + list(upstream.parameters())
       else:
-        trainable_params = model.parameters()
+        trainable_params += model.parameters()
       
 
     elif model_type == 'VGGlinear':
@@ -139,7 +145,8 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
         optimizer=optimizer,
         pretraining_store=layer['pretraining_store'],
         pretraining_load=layer['pretraining_load'],
-        model_base_path=model_path
+        model_base_path=model_path,
+        tp_alpha=tp_alpha
       )
     )
     # end for loop

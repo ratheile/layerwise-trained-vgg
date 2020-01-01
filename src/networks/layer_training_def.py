@@ -28,6 +28,9 @@ class LayerTrainingDefinition:
   upstream: nn.Module = None
   model: nn.Module = None
 
+  # trainable params
+  tp_alpha: nn.Parameter = None
+
   # other vars
   optimizer: Optimizer = None
 

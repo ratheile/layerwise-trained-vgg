@@ -1,16 +1,16 @@
 learning_rate: 0.001
-weight_decay: 0.00001 # ADAM decay
+weight_decay: 0.0 # ADAM decay
 color_channels: 3
-supervised_ratio: 0.5
-batch_size: 128
+supervised_ratio: 0.1
+batch_size: 100
 test_every_n_epochs: 1
-pred_loss_weight: 0.5
+pred_loss_weight: 0.99 # new as learnable param
 
 vgg_version: B
-vgg_dropout: 0.3
+vgg_dropout: 0.5
 
 # Persistence path for later analysis
-model_path: trained_models/cifar10_vgg_b_50ep
+model_path: trained_models/test_many_things1
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
@@ -23,7 +23,7 @@ layers:
 
   # Layer 0 (64)
   - num_epoch: 50
-    dropout_rate: 0.9
+    dropout_rate: 0.95
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load: null 
@@ -32,7 +32,7 @@ layers:
 
   # Layer 1 (64)
   - num_epoch: 50
-    dropout_rate: 0.8
+    dropout_rate: 0.9
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -41,7 +41,7 @@ layers:
 
   # Layer 2 (64)
   - num_epoch: 50
-    dropout_rate: 0.7
+    dropout_rate: 0.85
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -49,8 +49,8 @@ layers:
     upstream_params: null
 
   # Layer 3 (128)
-  - num_epoch: 50
-    dropout_rate: 0.6
+  - num_epoch: 10
+    dropout_rate: 0.8
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -58,8 +58,8 @@ layers:
     upstream_params: null
 
   # Layer 4 (128)
-  - num_epoch: 50
-    dropout_rate: 0.5
+  - num_epoch: 10
+    dropout_rate: 0.75
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -67,8 +67,8 @@ layers:
     upstream_params: null
 
   # Layer 5 (256)
-  - num_epoch: 50
-    dropout_rate: 0.5
+  - num_epoch: 10
+    dropout_rate: 0.7
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -76,8 +76,8 @@ layers:
     upstream_params: null
 
   # Layer 6 (256)
-  - num_epoch: 50
-    dropout_rate: 0.5
+  - num_epoch: 10
+    dropout_rate: 0.65
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -85,10 +85,20 @@ layers:
     upstream_params: null
 
   # Layer 8 (256)
-  - num_epoch: 50
-    dropout_rate: 0.5
+  - num_epoch: 10
+    dropout_rate: 0.6
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
     pretraining_store: True
+    upstream_params: null    
+
+
+    # VGG Linear Layer (256)
+  - num_epoch: 100 
+    dropout_rate: 0.3
+    model: VGGlinear # VGG n-th layer
+    optimizer: Adam
+    pretraining_load:  null
+    pretraining_store: False
     upstream_params: null

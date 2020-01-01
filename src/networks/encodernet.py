@@ -275,8 +275,9 @@ class AutoencoderNet():
 
       loss_pred = self.pred_criterion(prediction, dev_label)
 
-      alpha = self.pred_loss_weight
-      combo_loss = (loss_dc_s + loss_dc_us) * (1-alpha) + loss_pred * alpha
+      alpha_sig = 0.5 + (torch.sigmoid(config.tp_alpha) - 0.5)
+      alpha_reg = - (torch.log(alpha_sig) + torch.log(1-alpha_sig))
+      combo_loss = loss_dc_us * (1-alpha_sig) + (loss_dc_s + loss_pred) * alpha_sig  + alpha_reg 
 
       t_start, t_delta = self.measure_time(t_start)
       tot_t_loss += t_delta
@@ -308,6 +309,9 @@ class AutoencoderNet():
         )
       )
     
+    self.writer.add_scalar('alpha/x', config.tp_alpha.item(), global_step=global_epoch)
+    self.writer.add_scalar('alpha/sig_x', alpha_sig.item(), global_step=global_epoch)
+
     self.writer.add_scalar('loss_total/train', combo_loss.item(), global_step=global_epoch)
     self.writer.add_scalar(f'loss_{config.layer_name}/train', combo_loss.item(), global_step=epoch)
     self.writer.add_scalar('accuracy_total/train', accuracy, global_step=global_epoch)
