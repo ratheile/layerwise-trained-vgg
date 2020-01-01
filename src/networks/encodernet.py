@@ -57,13 +57,15 @@ class AutoencoderNet():
 
     color_channels = rcfg['color_channels']
     data_path = gcfg['datasets/{}/path'.format(rcfg['dataset'])]
+    dataset_workers = gcfg['dataset_workers']
 
     self.supervised_loader, self.unsupvised_loader,\
     self.test_loader = rcfg.switch('dataset', {
       'cifar10': lambda: semi_supervised_cifar10(
         data_path,
         supervised_ratio=rcfg['supervised_ratio'],
-        batch_size=rcfg['batch_size']
+        batch_size=rcfg['batch_size'],
+        num_workers=dataset_workers
       ),
       'mnist': lambda: semi_supervised_mnist(
         data_path,

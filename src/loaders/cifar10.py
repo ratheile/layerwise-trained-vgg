@@ -24,7 +24,8 @@ def semi_supervised_cifar10(
   root,
   supervised_ratio=0.1,
   batch_size=128,
-  download=False
+  download=False,
+  num_workers=(6,6,2)
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:    
 
   
@@ -51,21 +52,21 @@ def semi_supervised_cifar10(
 
   ds_train_us = CIFAR10(
       root=root,
-      transform=img_transform,
+      transform=img_transform_s,
       train=True,
       download=download
     )
 
   ds_train_s = CIFAR10(
       root=root,
-      transform=img_transform,
+      transform=img_transform_s,
       train=True,
       download=download
   )
 
   ds_test = CIFAR10(
       root=root,
-      transform=img_transform,
+      transform=img_transform_s,
       train=False,
       download=download
     )
@@ -86,18 +87,23 @@ def semi_supervised_cifar10(
   assert us_bs + s_bs == batch_size
 
   logging.info(f"Dataset (supervised={ss_ds_len}/total={ds_size}) us_bs={us_bs} s_bs={s_bs}")
+  logging.info(f"Using workers (unsupervised|supervised|test) {num_workers}")
 
   unsupervised_loader = DataLoader(ds_train_us, 
+    num_workers=num_workers[0],
+    pin_memory=True,
     sampler=unsupervised_sampler,
     batch_size=us_bs
   )
 
   supervised_loader = DataLoader(ds_train_s, 
+    num_workers=num_workers[1],
     sampler=supervised_sampler,
     batch_size=s_bs
   )
 
   test_loader = DataLoader(ds_test, 
+    num_workers=num_workers[2],
     batch_size=batch_size
   )
 
