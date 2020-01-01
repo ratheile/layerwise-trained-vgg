@@ -12,7 +12,7 @@ logging.info("----------------------------------")
 logging.info("- Welcome to BioP SeSu Lotra DNN -")
 logging.info("----------------------------------")
 
-run_cfg_path =  'src/yaml/nets/vgg_A_50ep_linear.yml'
+run_cfg_path =  'src/yaml/nets/vgg_B_50ep.yml'
 env_cfg_path = 'src/yaml/env.yml'
 
 env_cfg = ConfigLoader().from_file(env_cfg_path)

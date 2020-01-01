@@ -5,6 +5,8 @@ supervised_ratio: 0.5
 batch_size: 128
 test_every_n_epochs: 1
 pred_loss_weight: 0.5
+
+vgg_version: A
 vgg_dropout: 0.3
 
 # Persistence path for later analysis

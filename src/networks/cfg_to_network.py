@@ -34,9 +34,11 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
   learning_rate = rcfg['learning_rate']
   weight_decay = rcfg['weight_decay']
   color_channels = rcfg['color_channels']
-  vgg_dropout = rcfg['vgg_dropout']
   dataset_name = rcfg['dataset']
   model_path = rcfg['model_path']
+
+  vgg_version = rcfg['vgg_version']
+  vgg_dropout = rcfg['vgg_dropout']
 
   # params from global environment config
   device = gcfg['device']
@@ -47,7 +49,11 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
 
   # just initialize VGG, doesnt take much time
   # even when not needed
-  vgg = VGG(num_classes=num_classes, dropout=vgg_dropout, img_size=img_size) 
+  vgg = VGG(
+    num_classes=num_classes,
+    dropout=vgg_dropout,
+    img_size=img_size,
+    vgg_version=vgg_version) 
 
   for id_l, layer in enumerate(rcfg['layers']):
 

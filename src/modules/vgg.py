@@ -4,13 +4,20 @@ from torch import nn, Tensor
 from typing import Tuple, List
 
 cfgs = {
-    'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512]
+  'A': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512],
+  'B': [32, 32, 'M',  64,  64, 'M', 128, 128, 'M', 256, 256]
 }
 
 class VGG(nn.Module):
-  def __init__(self, num_classes: int, dropout: float, img_size: int, init_weights=True):
+  def __init__(self, 
+    num_classes: int,
+    dropout: float,
+    img_size: int,
+    vgg_version: str,
+    init_weights=True):
+
     super().__init__()
-    layers, trainable_modules = self.make_modules(cfgs['A'], img_size)
+    layers, trainable_modules = self.make_modules(cfgs[vgg_version], img_size)
     self.layers = nn.Sequential(*layers)
     self.trainable_modules = trainable_modules
 

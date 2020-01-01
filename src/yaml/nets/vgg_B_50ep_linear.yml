@@ -6,19 +6,19 @@ batch_size: 128
 test_every_n_epochs: 1
 pred_loss_weight: 0.5
 
-vgg_version: A
+vgg_version: B
 vgg_dropout: 0.3
 
 # Persistence path for later analysis
-model_path: trained_models/cifar10_vgg_a_50ep
+model_path: trained_models/cifar10_vgg_b_50ep
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
 decoding_criterion: MSELoss # Supports: MSELoss
 prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
 
-# pretraining_store must be a path !
-# pretraining_load must be a file name !
+# pretraining_store must be True / False !
+# pretraining_load must be a file name / not a path !
 layers:
 
   # Layer 0 (64)
@@ -26,10 +26,8 @@ layers:
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    # pretraining_load: trained_models/cifar10_50/layer_0_stack.pickle
-    # pretraining_store: null
-    pretraining_load: null 
-    pretraining_store: True
+    pretraining_load: layer_0_stack.pickle
+    pretraining_store: False
     upstream_params: null
 
   # Layer 1 (64)
@@ -37,8 +35,8 @@ layers:
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    pretraining_load:  null
-    pretraining_store: True
+    pretraining_load: layer_1_stack.pickle
+    pretraining_store: False
     upstream_params: null
 
   # Layer 2 (64)
@@ -46,8 +44,8 @@ layers:
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    pretraining_load:  null
-    pretraining_store: True
+    pretraining_load: layer_2_stack.pickle
+    pretraining_store: False
     upstream_params: null
 
   # Layer 3 (128)
@@ -55,8 +53,8 @@ layers:
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    pretraining_load:  null
-    pretraining_store: True
+    pretraining_load: layer_3_stack.pickle
+    pretraining_store: False
     upstream_params: null
 
   # Layer 4 (128)
@@ -64,8 +62,8 @@ layers:
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    pretraining_load:  null
-    pretraining_store: True
+    pretraining_load: layer_4_stack.pickle
+    pretraining_store: False
     upstream_params: null
 
   # Layer 5 (256)
@@ -73,8 +71,8 @@ layers:
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    pretraining_load:  null
-    pretraining_store: True
+    pretraining_load: layer_5_stack.pickle
+    pretraining_store: False
     upstream_params: null
 
   # Layer 6 (256)
@@ -82,8 +80,8 @@ layers:
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    pretraining_load:  null
-    pretraining_store: True
+    pretraining_load: layer_6_stack.pickle
+    pretraining_store: False
     upstream_params: null
 
   # Layer 8 (256)
@@ -91,15 +89,15 @@ layers:
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    pretraining_load:  null
-    pretraining_store: True
+    pretraining_load: layer_7_stack.pickle
+    pretraining_store: False
     upstream_params: null
   
     # VGG Linear Layer (256)
-  # - num_epoch: 30
-  #   dropout_rate: 0.3
-  #   model: VGGlinear # VGG n-th layer
-  #   optimizer: Adam
-  #   pretraining_load:  null
-  #   pretraining_store: trained_models/cifar10_50 
-  #   upstream_params: null
+  - num_epoch: 100 
+    dropout_rate: 0.3
+    model: VGGlinear # VGG n-th layer
+    optimizer: Adam
+    pretraining_load:  null
+    pretraining_store: False
+    upstream_params: null

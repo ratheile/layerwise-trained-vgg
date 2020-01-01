@@ -6,11 +6,11 @@ batch_size: 128
 test_every_n_epochs: 1
 pred_loss_weight: 0.5
 
-vgg_version: A
+vgg_version: B
 vgg_dropout: 0.3
 
 # Persistence path for later analysis
-model_path: trained_models/cifar10_vgg_a_50ep
+model_path: trained_models/cifar10_vgg_b_50ep
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
@@ -26,8 +26,6 @@ layers:
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
-    # pretraining_load: trained_models/cifar10_50/layer_0_stack.pickle
-    # pretraining_store: null
     pretraining_load: null 
     pretraining_store: True
     upstream_params: null
@@ -94,12 +92,3 @@ layers:
     pretraining_load:  null
     pretraining_store: True
     upstream_params: null
-  
-    # VGG Linear Layer (256)
-  # - num_epoch: 30
-  #   dropout_rate: 0.3
-  #   model: VGGlinear # VGG n-th layer
-  #   optimizer: Adam
-  #   pretraining_load:  null
-  #   pretraining_store: trained_models/cifar10_50 
-  #   upstream_params: null
