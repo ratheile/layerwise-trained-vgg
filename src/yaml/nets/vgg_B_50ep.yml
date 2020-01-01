@@ -22,8 +22,8 @@ prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
 layers:
 
   # Layer 0 (64)
-  - num_epoch: 50
-    dropout_rate: 0.95
+  - num_epoch: 10
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load: null 
@@ -31,8 +31,8 @@ layers:
     upstream_params: null
 
   # Layer 1 (64)
-  - num_epoch: 50
-    dropout_rate: 0.9
+  - num_epoch: 10
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -40,8 +40,8 @@ layers:
     upstream_params: null
 
   # Layer 2 (64)
-  - num_epoch: 50
-    dropout_rate: 0.85
+  - num_epoch: 10
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -50,7 +50,7 @@ layers:
 
   # Layer 3 (128)
   - num_epoch: 10
-    dropout_rate: 0.8
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -59,7 +59,7 @@ layers:
 
   # Layer 4 (128)
   - num_epoch: 10
-    dropout_rate: 0.75
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -68,7 +68,7 @@ layers:
 
   # Layer 5 (256)
   - num_epoch: 10
-    dropout_rate: 0.7
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -77,7 +77,7 @@ layers:
 
   # Layer 6 (256)
   - num_epoch: 10
-    dropout_rate: 0.65
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -86,7 +86,7 @@ layers:
 
   # Layer 8 (256)
   - num_epoch: 10
-    dropout_rate: 0.6
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -96,7 +96,7 @@ layers:
 
     # VGG Linear Layer (256)
   - num_epoch: 100 
-    dropout_rate: 0.3
+    dropout_rate: 0.5
     model: VGGlinear # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
