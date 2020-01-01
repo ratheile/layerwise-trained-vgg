@@ -24,7 +24,8 @@ class VGG(nn.Module):
 
     self.avgpool = nn.AdaptiveAvgPool2d((4, 4))
     self.classifier = nn.Sequential(
-      nn.Linear(512 * 4 * 4, 1024),
+      # take size from last vgg layer
+      nn.Linear(cfgs[vgg_version][-1] * 4 * 4, 1024), 
       nn.LeakyReLU(inplace=True),
       nn.Dropout(dropout),
       nn.Linear(1024, num_classes),

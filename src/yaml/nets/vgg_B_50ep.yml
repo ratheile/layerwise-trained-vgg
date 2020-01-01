@@ -6,11 +6,11 @@ batch_size: 100
 test_every_n_epochs: 1
 pred_loss_weight: 0.99 # TODO: make this enforcable, currently as learnable param
 
-vgg_version: B
+vgg_version: C
 vgg_dropout: 0.5
 
 # Persistence path for later analysis
-model_path: trained_models/test_many_things1
+model_path: trained_models/vgg_c_30ep
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
@@ -22,7 +22,7 @@ prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
 layers:
 
   # Layer 0 (64)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
@@ -31,7 +31,7 @@ layers:
     upstream_params: null
 
   # Layer 1 (64)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
@@ -40,7 +40,7 @@ layers:
     upstream_params: null
 
   # Layer 2 (64)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
@@ -49,7 +49,7 @@ layers:
     upstream_params: null
 
   # Layer 3 (128)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
@@ -58,7 +58,7 @@ layers:
     upstream_params: null
 
   # Layer 4 (128)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
@@ -67,7 +67,7 @@ layers:
     upstream_params: null
 
   # Layer 5 (256)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
@@ -76,7 +76,7 @@ layers:
     upstream_params: null
 
   # Layer 6 (256)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
@@ -85,7 +85,7 @@ layers:
     upstream_params: null
 
   # Layer 8 (256)
-  - num_epoch: 10
+  - num_epoch: 30
     dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam

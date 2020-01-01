@@ -184,8 +184,8 @@ class AutoencoderNet():
         )
       )
     
-    self.writer.add_scalar('train_loss', loss_pred.item(), global_step=global_epoch)
-    self.writer.add_scalar('train_accuracy', accuracy, global_step=global_epoch)
+    self.writer.add_scalar('loss_linear/train', loss_pred.item(), global_step=global_epoch)
+    self.writer.add_scalar('accuracy_linear/train', accuracy, global_step=global_epoch)
     
   def test_vgg_classifier(self, 
           epoch: int, 
@@ -229,8 +229,8 @@ class AutoencoderNet():
       )
     )
 
-    self.writer.add_scalar('test_loss', test_loss, global_step=global_epoch)
-    self.writer.add_scalar('test_accuracy', test_acc, global_step=global_epoch)
+    self.writer.add_scalar('loss_linear/test', test_loss, global_step=global_epoch)
+    self.writer.add_scalar('accuracy_linear/test', test_acc, global_step=global_epoch)
 
   def train(self, epoch: int, global_epoch:int,  config: LayerTrainingDefinition):
     #TODO: check if still necessary self.model.train()
