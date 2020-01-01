@@ -29,13 +29,17 @@ def vgg_sidecar_layer(vgg: VGG, index:int, dropout:float) -> nn.Module:
 def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
   -> List[LayerTrainingDefinition]:
 
+  # params from run config
   num_layers = len(rcfg['layers'])
-  device = gcfg['device']
   learning_rate = rcfg['learning_rate']
   weight_decay = rcfg['weight_decay']
   color_channels = rcfg['color_channels']
   vgg_dropout = rcfg['vgg_dropout']
   dataset_name = rcfg['dataset']
+  model_path = rcfg['model_path']
+
+  # params from global environment config
+  device = gcfg['device']
   img_size = gcfg[f'datasets/{dataset_name}/img_size']
   num_classes = gcfg[f'datasets/{dataset_name}/num_classes']
 
@@ -92,8 +96,9 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       stack = NetworkStack(prev_stack).to(device)
 
       # load stack from pickle if required
-      stack_path = layer['pretraining_load']
-      if stack_path is not None:
+      stack_name = layer['pretraining_load']
+      if stack_name is not None:
+        stack_path = '{}/{}'.format(model_path, stack_name)
         load_layer(stack, stack_path)
 
       # some upstream maps require training
@@ -116,7 +121,7 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
     )
 
     layer_name = f'layer_{id_l}'
-        
+
     layer_configs.append(
       LayerTrainingDefinition(
         layer_type=layer_type,
@@ -128,6 +133,7 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
         optimizer=optimizer,
         pretraining_store=layer['pretraining_store'],
         pretraining_load=layer['pretraining_load'],
+        model_base_path=model_path
       )
     )
     # end for loop

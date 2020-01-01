@@ -10,12 +10,16 @@ class LayerType(Enum):
 
 @dataclass
 class LayerTrainingDefinition:
+
+  # naming / ID
   layer_type: LayerType = None
   layer_name: str = None
-  #config
+
+  # config
   num_epochs: int = 0
   pretraining_store: str = None
   pretraining_load: str = None
+  model_base_path:str = None
 
   # stack including this layer
   stack: NetworkStack = None

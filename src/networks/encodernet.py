@@ -378,13 +378,12 @@ class AutoencoderNet():
         # end epoch loop
 
 
-        if config.pretraining_store is not None:
-          base = '{}/{}'.format(
-            config.pretraining_store, 
+        if config.pretraining_store is True:
+          path = '{}/{}_stack.pickle'.format(
+            config.model_base_path, 
             config.layer_name
           )
-          fn = f'{base}_stack.pickle'
-          save_layer(config.stack, fn)
+          save_layer(config.stack, path)
       
       else:
         logging.info('### Use pretrained tensors for {} ###'.format(id_c))
