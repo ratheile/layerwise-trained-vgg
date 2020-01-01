@@ -91,7 +91,6 @@ def semi_supervised_cifar10(
 
   unsupervised_loader = DataLoader(ds_train_us, 
     num_workers=num_workers[0],
-    pin_memory=True,
     sampler=unsupervised_sampler,
     batch_size=us_bs
   )
