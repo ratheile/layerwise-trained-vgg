@@ -4,7 +4,7 @@ color_channels: 3
 supervised_ratio: 0.1
 batch_size: 100
 test_every_n_epochs: 1
-pred_loss_weight: 0.99 # new as learnable param
+pred_loss_weight: 0.99 # TODO: make this enforcable, currently as learnable param
 
 vgg_version: B
 vgg_dropout: 0.5
