@@ -28,7 +28,7 @@ logging.info("----------------------------------")
 # Parse arguments
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--cfg', type=file_path, 
+parser.add_argument('--cfg', type=file_path, required=True, 
   help='The main config yaml file.')
 parser.add_argument('--env', type=file_path, default='src/yaml/env.yml',
   help='The environment yaml file.')
