@@ -1,8 +1,9 @@
 learning_rate: 0.001
 weight_decay: 0.0 # ADAM decay
 color_channels: 3
-supervised_ratio: 0.5
-batch_size: 100
+supervised_ratio: 0.1
+augmentation: True
+batch_size: 128
 test_every_n_epochs: 1
 
 pred_loss_weight: 0.5 # "trainable" or  number (0,1)"

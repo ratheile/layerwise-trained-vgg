@@ -68,6 +68,7 @@ class AutoencoderNet():
         dataset_transform,
         supervised_ratio=rcfg['supervised_ratio'],
         batch_size=rcfg['batch_size'],
+        augmentation=rcfg['augmentation'],
         num_workers=dataset_workers
       ),
       'mnist': lambda: semi_supervised_mnist(

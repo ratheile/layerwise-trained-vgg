@@ -38,6 +38,7 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
   learning_rate = rcfg['learning_rate']
   weight_decay = rcfg['weight_decay']
   color_channels = rcfg['color_channels']
+  augmentation = rcfg['augmentation']
   dataset_name = rcfg['dataset']
   model_path = rcfg['model_path']
 
