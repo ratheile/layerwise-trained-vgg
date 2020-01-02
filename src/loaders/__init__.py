@@ -7,5 +7,5 @@ __all__ = (
   'semi_supervised_mnist',
   'semi_supervised_cifar10',
   'ConfigLoader'
-
+  
 )
