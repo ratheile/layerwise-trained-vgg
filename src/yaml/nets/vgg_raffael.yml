@@ -1,7 +1,7 @@
 learning_rate: 0.001
 weight_decay: 0.0 # ADAM decay
 color_channels: 3
-supervised_ratio: 0.1
+supervised_ratio: 0.5
 batch_size: 100
 test_every_n_epochs: 1
 
@@ -10,13 +10,13 @@ pred_loss_weight: 0.5 # "trainable" or  number (0,1)"
 # us*(1-a)+(s+p)*a+r
 # (us+s)*(1-a)+p*a+r
 # (us+10*s)*(1-a)+p*a+r
-ae_loss_function: (us+s)*(1-a)+p*a+r
+ae_loss_function: (us+10*s)*(1-a)+p*a+r
 
-vgg_version: B
+vgg_version: A
 vgg_dropout: 0.5
 
 # Persistence path for later analysis
-model_path: trained_models/vgg_B_30ep_2
+model_path: trained_models/vgg_A
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10

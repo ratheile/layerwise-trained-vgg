@@ -1,4 +1,4 @@
 #!/bin/bash
-source ~/anaconda3/etc/profile.d/conda.sh
+source /home/shafall/opt/miniconda3/etc/profile.d/conda.sh
 conda activate grewe
-python src/main.py
+python src/main.py --cfg src/yaml/nets/vgg_raffael.yml
