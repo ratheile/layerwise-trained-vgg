@@ -68,6 +68,10 @@ def semi_supervised_cifar10(
     transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284)) # TODO: WHY???
   ])
 
+  test_transform = transforms.Compose([                              
+    transforms.ToTensor()
+  ])
+
   transforms_dict = {
     'light_20': light,
     'med_10': med_10,
@@ -94,7 +98,7 @@ def semi_supervised_cifar10(
 
   ds_test = CIFAR10(
       root=root,
-      transform=None,
+      transform=test_transform,
       train=False,
       download=download
     )
