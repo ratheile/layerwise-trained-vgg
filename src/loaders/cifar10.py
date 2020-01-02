@@ -36,6 +36,7 @@ def semi_supervised_cifar10(
 
   img_transform_med = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
+    transforms.RandomRotation(20),
     transforms.RandomHorizontalFlip(),                                
     transforms.ToTensor(),
     transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))

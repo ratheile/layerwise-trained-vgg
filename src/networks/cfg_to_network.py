@@ -20,10 +20,14 @@ from typing import List, IO
 def load_layer(layer: nn.Module, path: str):
   return layer.load_state_dict(torch_load(path))
 
-def vgg_sidecar_layer(vgg: VGG, index:int, dropout:float) -> nn.Module:
+def vgg_sidecar_layer(vgg: VGG, index:int, dropout:float, kernel_size:int) -> nn.Module:
   vgg_layers, channels, img_size, _ = vgg.get_trainable_modules()[index]
-  scae = SupervisedSidecarAutoencoder(vgg_layers, img_size, channels, dropout)
-  return scae
+  return SupervisedSidecarAutoencoder(
+    vgg_layers,
+    img_size,
+    channels,
+    dropout,
+    kernel_size)
 
 
 def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
@@ -39,6 +43,9 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
 
   vgg_version = rcfg['vgg_version']
   vgg_dropout = rcfg['vgg_dropout']
+
+  pred_loss_weight = rcfg['pred_loss_weight']
+  ae_loss_function = rcfg['ae_loss_function']
 
   # params from global environment config
   device = gcfg['device']
@@ -67,7 +74,8 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
         color_channels=color_channels
       ),
       'VGGn': lambda: vgg_sidecar_layer(vgg, id_l,
-        dropout=dropout_rate
+        dropout=dropout_rate,
+        kernel_size=layer['kernel_size']
       ),
       'VGGlinear': lambda: vgg
     }).to(device)
@@ -99,8 +107,12 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       layer_type = LayerType.Stack
 
       # Prepare learnable scalars
-      tp_alpha = nn.Parameter(torch.rand(1).to(device), requires_grad=True)
-      trainable_params = [tp_alpha]
+      if pred_loss_weight == 'trainable':
+        tp_alpha = nn.Parameter(torch.rand(1).to(device), requires_grad=True)
+        trainable_params = [tp_alpha]
+      else:
+        tp_alpha = pred_loss_weight
+        trainable_params = []
       
       # Init stack out of layers
       prev_stack = [(cfg.model, cfg.upstream) for cfg in layer_configs]
@@ -146,7 +158,8 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
         pretraining_store=layer['pretraining_store'],
         pretraining_load=layer['pretraining_load'],
         model_base_path=model_path,
-        tp_alpha=tp_alpha
+        tp_alpha=tp_alpha,
+        ae_loss_function=ae_loss_function
       )
     )
     # end for loop

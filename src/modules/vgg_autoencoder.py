@@ -13,12 +13,24 @@ class SidecarAutoencoder(nn.Module):
   main_network_layer: List[nn.Module], 
   img_size: int,
   channels: Tuple[int, int],
-  dropout: float):
+  dropout: float,
+  kernel_size: int):
 
     super().__init__()
 
-    bn_args = { "eps":1e-05, "momentum":0.1, "affine":True, "track_running_stats":True }
-    c2d_args = { "kernel_size":3, "stride":1, "padding":1 }
+    bn_args = {
+      "eps":1e-05,
+      "momentum":0.1,
+      "affine":True,
+      "track_running_stats":True 
+    }
+
+    c2d_args = { 
+      "kernel_size":kernel_size,
+      "stride":1,
+      "padding":int(kernel_size / 2)
+    }
+
     channel_mult = 2
     in_channels = channels[0]
     num_channels = channels[-1]
@@ -91,13 +103,15 @@ class SupervisedSidecarAutoencoder(SidecarAutoencoder):
   main_network_layer: List[nn.Module], 
   img_size: int,
   channels: Tuple[int, int],
-  dropout: float):
+  dropout: float,
+  kernel_size:int):
 
     super().__init__(
       main_network_layer,
       img_size,
       channels,
-      dropout
+      dropout,
+      kernel_size
     )
 
     fc_layer_size = self.bottleneck_size()

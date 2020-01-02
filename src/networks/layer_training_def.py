@@ -33,4 +33,5 @@ class LayerTrainingDefinition:
 
   # other vars
   optimizer: Optimizer = None
+  ae_loss_function: str = None
 

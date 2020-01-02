@@ -277,9 +277,24 @@ class AutoencoderNet():
 
       loss_pred = self.pred_criterion(prediction, dev_label)
 
-      alpha_sig = 0.5 + (torch.sigmoid(config.tp_alpha) - 0.5)
-      alpha_reg = - (torch.log(alpha_sig) + torch.log(1-alpha_sig))
-      combo_loss = loss_dc_us * (1-alpha_sig) + (loss_dc_s + loss_pred) * alpha_sig  + alpha_reg 
+      # tensor names: s = supervised, us = unsupervised, p = prediction(label)
+      # a = alpha  r = regulation
+      loss_functions = {
+        'us*(1-a)+(s+p)*a+r':    lambda s, us, p, a, r: us * (1-a) + (s + p) * a + r,
+        '(us+s)*(1-a)+p*a+r':    lambda s, us, p, a, r: (us + s) * (1-a) + p * a + r,
+        '(us+10*s)*(1-a)+p*a+r': lambda s, us, p, a, r: (us + 10*s) * (1-a) + p * a + r,
+      }
+
+      loss_f = loss_functions[config.ae_loss_function]
+
+      if isinstance(config.tp_alpha, nn.Parameter):
+        alpha = 0.5 + (torch.sigmoid(config.tp_alpha) - 0.5)
+        reg = - (torch.log(alpha) + torch.log(1-alpha))
+      else:
+        alpha = config.tp_alpha
+        reg = 0
+
+      combo_loss = loss_f(loss_dc_s, loss_dc_us, loss_pred, alpha, reg)
 
       t_start, t_delta = self.measure_time(t_start)
       tot_t_loss += t_delta
@@ -311,8 +326,9 @@ class AutoencoderNet():
         )
       )
     
-    self.writer.add_scalar('alpha/x', config.tp_alpha.item(), global_step=global_epoch)
-    self.writer.add_scalar('alpha/sig_x', alpha_sig.item(), global_step=global_epoch)
+    if isinstance(config.tp_alpha, nn.Parameter):
+      self.writer.add_scalar('alpha/x', config.tp_alpha.item(), global_step=global_epoch)
+      self.writer.add_scalar('alpha/sig_x', alpha.item(), global_step=global_epoch)
 
     self.writer.add_scalar('loss_total/train', combo_loss.item(), global_step=global_epoch)
     self.writer.add_scalar(f'loss_{config.layer_name}/train', combo_loss.item(), global_step=epoch)
