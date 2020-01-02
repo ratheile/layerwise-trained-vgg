@@ -22,27 +22,35 @@ class CifarSubsetSampler(Sampler):
 
 def semi_supervised_cifar10(
   root,
+  transformation_id: str,
   supervised_ratio=0.1,
   batch_size=128,
   download=False,
   num_workers=(6,6,2)
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:    
 
-  
-  img_transform_light = transforms.Compose([
+  light = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize([0.5], [0.5])
   ])
 
-  img_transform_med = transforms.Compose([
+  med_20 = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomRotation(20),
     transforms.RandomHorizontalFlip(),                                
     transforms.ToTensor(),
     transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))
+  ]) 
+  
+  med_10 = transforms.Compose([
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomRotation(10),
+    transforms.RandomHorizontalFlip(),                                
+    transforms.ToTensor(),
+    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))
   ])
 
-  img_transform_heavy = transforms.Compose([
+  heavy_45 = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomRotation(45),
     transforms.RandomHorizontalFlip(),
@@ -51,23 +59,32 @@ def semi_supervised_cifar10(
     transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284)) # TODO: WHY???
   ])
 
+  transforms_dict = {
+    'light_20': light,
+    'med_10': med_10,
+    'med_20': med_20,
+    'heavy_45': heavy_45
+  }
+
+  selected_transform = transforms_dict[transformation_id]
+
   ds_train_us = CIFAR10(
       root=root,
-      transform=img_transform_med,
+      transform=selected_transform,
       train=True,
       download=download
     )
 
   ds_train_s = CIFAR10(
       root=root,
-      transform=img_transform_med,
+      transform=selected_transform,
       train=True,
       download=download
   )
 
   ds_test = CIFAR10(
       root=root,
-      transform=img_transform_med,
+      transform=selected_transform,
       train=False,
       download=download
     )

@@ -20,6 +20,8 @@ model_path: trained_models/vgg_B_30ep_2
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
+dataset_transform: med_10
+
 decoding_criterion: MSELoss # Supports: MSELoss
 prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
 

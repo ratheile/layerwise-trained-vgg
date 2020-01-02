@@ -56,13 +56,16 @@ class AutoencoderNet():
     self.pred_loss_weight = rcfg['pred_loss_weight']
 
     color_channels = rcfg['color_channels']
+
     data_path = gcfg['datasets/{}/path'.format(rcfg['dataset'])]
     dataset_workers = gcfg['dataset_workers']
+    dataset_transform = rcfg['dataset_transform']
 
     self.supervised_loader, self.unsupvised_loader,\
     self.test_loader = rcfg.switch('dataset', {
       'cifar10': lambda: semi_supervised_cifar10(
         data_path,
+        dataset_transform,
         supervised_ratio=rcfg['supervised_ratio'],
         batch_size=rcfg['batch_size'],
         num_workers=dataset_workers
