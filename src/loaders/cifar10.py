@@ -78,7 +78,14 @@ def semi_supervised_cifar10(
 
   selected_transform = transforms_dict[transformation_id]
 
-  ds_train = CIFAR10(
+  ds_train_s = CIFAR10(
+      root=root,
+      transform=selected_transform,
+      train=True,
+      download=download
+    )
+
+  ds_train_us = CIFAR10(
       root=root,
       transform=selected_transform,
       train=True,
@@ -87,11 +94,12 @@ def semi_supervised_cifar10(
 
   ds_test = CIFAR10(
       root=root,
+      transform=None,
       train=False,
       download=download
     )
 
-  ds_size = len(ds_train)
+  ds_size = len(ds_train_s)
   assert supervised_ratio < 1 and supervised_ratio > 0
   ss_ds_len = int(ds_size * supervised_ratio)
 
@@ -118,13 +126,13 @@ def semi_supervised_cifar10(
   logging.info(f"Dataset (supervised={ss_ds_len}/total={ds_size}) us_bs={us_bs} s_bs={s_bs}")
   logging.info(f"Using workers (unsupervised|supervised|test) {num_workers}")
 
-  unsupervised_loader = DataLoader(ds_train, 
+  unsupervised_loader = DataLoader(ds_train_us, 
     num_workers=num_workers[0],
     sampler=unsupervised_sampler,
     batch_size=us_bs
   )
 
-  supervised_loader = DataLoader(ds_train, 
+  supervised_loader = DataLoader(ds_train_s, 
     num_workers=num_workers[1],
     sampler=supervised_sampler,
     batch_size=s_bs
