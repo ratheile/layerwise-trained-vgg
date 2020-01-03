@@ -50,7 +50,6 @@ class AutoencoderNet():
         )
 
     self.device        = gcfg['device']
-    self.learning_rate = rcfg['learning_rate']
     self.weight_decay  = rcfg['weight_decay']
     self.test_every_n_epochs = rcfg['test_every_n_epochs']
     self.pred_loss_weight = rcfg['pred_loss_weight']

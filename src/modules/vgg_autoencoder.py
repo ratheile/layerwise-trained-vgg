@@ -124,7 +124,7 @@ class SidecarAutoencoder(nn.Module):
       channel_mult, c2d_args, bn_args
     )
 
-    self.encoder = decoders_dict[encoder_type](
+    self.decoder = decoders_dict[encoder_type](
       dropout, num_channels,
       channel_mult, c2d_args, bn_args, in_channels
     )

@@ -129,6 +129,7 @@ layers:
     # VGG Linear Layer (256)
   - num_epoch: 50
     dropout_rate: 0.5
+    learning_rate: 0.001
     model: VGGlinear # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
