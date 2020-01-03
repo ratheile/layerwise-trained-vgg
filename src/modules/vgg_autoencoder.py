@@ -7,14 +7,94 @@ from .fcview import FCView
 
 from typing import List, Callable, Tuple
 
+encoders_dict = {
 
+  'A': lambda dropout, num_channels, channel_mult, c2d_args, bn_args: nn.Sequential(
+    nn.Dropout(dropout),
+    
+    nn.MaxPool2d(kernel_size=2, stride=2),
+    nn.Conv2d(in_channels=num_channels, out_channels=num_channels*(channel_mult), **c2d_args), 
+    nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),
+    nn.Dropout(dropout),
+    nn.LeakyReLU(True),   
+
+    nn.MaxPool2d(kernel_size=2, stride=2),
+    nn.Conv2d(in_channels=num_channels*(channel_mult), out_channels=num_channels*(channel_mult**2), **c2d_args), 
+    nn.BatchNorm2d(num_features=num_channels*(channel_mult**2), **bn_args),
+    nn.Dropout(dropout),
+    nn.LeakyReLU(True),  
+  ), 
+
+  'B': lambda dropout, num_channels, channel_mult, c2d_args, bn_args: nn.Sequential(
+    nn.Dropout(dropout),
+    
+    nn.MaxPool2d(kernel_size=2, stride=2),
+    nn.Conv2d(in_channels=num_channels, out_channels=num_channels*(channel_mult), **c2d_args), 
+    nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),
+    nn.Dropout(dropout),
+    nn.LeakyReLU(True),   
+  ),
+
+  'C': lambda dropout, num_channels, channel_mult, c2d_args, bn_args: nn.Sequential(
+    nn.Dropout(dropout),
+    
+    nn.MaxPool2d(kernel_size=2, stride=2),
+    # Reduce channel sizes instead of increasing them in B here:
+    nn.Conv2d(in_channels=num_channels, out_channels=int(num_channels/(channel_mult)), **c2d_args), 
+    nn.BatchNorm2d(num_features=int(num_channels/(channel_mult)), **bn_args),
+    nn.Dropout(dropout),
+    nn.LeakyReLU(True),   
+  )
+}
+
+decoders_dict = {
+
+  'A': lambda dropout, num_channels, channel_mult, c2d_args, bn_args, in_channels: nn.Sequential(
+    Interpolate(),                
+    nn.Conv2d(in_channels=num_channels*(channel_mult**2), out_channels=num_channels*(channel_mult), **c2d_args),       
+    nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),
+    nn.LeakyReLU(True),
+
+    Interpolate(),                
+    nn.Conv2d(in_channels=num_channels*(channel_mult), out_channels=num_channels, **c2d_args),       
+    nn.BatchNorm2d(num_features=num_channels, **bn_args),
+    nn.LeakyReLU(True),
+
+    nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
+    nn.BatchNorm2d(num_features=in_channels, **bn_args),
+    nn.Sigmoid()
+  ),
+
+  'B': lambda dropout, num_channels, channel_mult, c2d_args, bn_args, in_channels: nn.Sequential(
+    Interpolate(),                
+    nn.Conv2d(in_channels=num_channels*(channel_mult), out_channels=num_channels, **c2d_args),       
+    nn.BatchNorm2d(num_features=num_channels, **bn_args),
+    nn.LeakyReLU(True),
+
+    nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
+    nn.BatchNorm2d(num_features=in_channels, **bn_args),
+    nn.Sigmoid()
+  ),
+
+  'C': lambda dropout, num_channels, channel_mult, c2d_args, bn_args, in_channels: nn.Sequential(
+    Interpolate(),                
+    nn.Conv2d(in_channels=int(num_channels/(channel_mult)), out_channels=num_channels, **c2d_args),       
+    nn.BatchNorm2d(num_features=num_channels, **bn_args),
+    nn.LeakyReLU(True),
+
+    nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
+    nn.BatchNorm2d(num_features=in_channels, **bn_args),
+    nn.Sigmoid()
+  )
+}
 class SidecarAutoencoder(nn.Module):
   def __init__(self, 
   main_network_layer: List[nn.Module], 
   img_size: int,
   channels: Tuple[int, int],
   dropout: float,
-  kernel_size: int):
+  kernel_size: int,
+  encoder_type:str):
 
     super().__init__()
 
@@ -35,49 +115,18 @@ class SidecarAutoencoder(nn.Module):
     in_channels = channels[0]
     num_channels = channels[-1]
 
-    # Conv2d:      b,1c,w,h       -->  b,8c,w,h
-    # MaxPool2d:   b,8c,w,h       -->  b,8c,w/2,h/2
-    # Conv2d:      b,8c,w/2,h/2   -->  b,16c,w/2,h/2
-    # MaxPool2d:   b,16c,w/2,h/2  -->  b,16c,w/4,h/4
+    self.encoder_type = encoder_type
     self.upstream_layers = nn.Sequential(*main_network_layer)
 
     # First dropout layer is for upstream training, but should not be there in upstream processing
-    self.encoder = nn.Sequential(
-      nn.Dropout(dropout),
-      
-      nn.MaxPool2d(kernel_size=2, stride=2),
-      nn.Conv2d(in_channels=num_channels, out_channels=num_channels*(channel_mult), **c2d_args), 
-      nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),
-      nn.Dropout(dropout),
-      nn.LeakyReLU(True),   
-
-      nn.MaxPool2d(kernel_size=2, stride=2),
-      nn.Conv2d(in_channels=num_channels*(channel_mult), out_channels=num_channels*(channel_mult**2), **c2d_args), 
-      nn.BatchNorm2d(num_features=num_channels*(channel_mult**2), **bn_args),
-      nn.Dropout(dropout),
-      nn.LeakyReLU(True),  
+    self.encoder = encoders_dict[encoder_type](
+      dropout, num_channels,
+      channel_mult, c2d_args, bn_args
     )
 
-    # Interpolate:  b,16c,w/4,h/4  -->  b,16c,w/2,h/2
-    # Conv2d:       b,16c,w/2,h/2  -->  b,8c,w/2,h/2
-    # Interpolate:  b,8c,w/2,h/2   -->  b,8c,w,h
-    # Conv2d:       b,8c,w,h       -->  b,1c,w,h
-
-    self.decoder = nn.Sequential(
-
-      Interpolate(),                
-      nn.Conv2d(in_channels=num_channels*(channel_mult**2), out_channels=num_channels*(channel_mult), **c2d_args),       
-      nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),
-      nn.LeakyReLU(True),
-
-      Interpolate(),                
-      nn.Conv2d(in_channels=num_channels*(channel_mult), out_channels=num_channels, **c2d_args),       
-      nn.BatchNorm2d(num_features=num_channels, **bn_args),
-      nn.LeakyReLU(True),
-
-      nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
-      nn.BatchNorm2d(num_features=in_channels, **bn_args),
-      nn.Sigmoid()
+    self.encoder = decoders_dict[encoder_type](
+      dropout, num_channels,
+      channel_mult, c2d_args, bn_args, in_channels
     )
 
     self.img_size = img_size
@@ -85,7 +134,13 @@ class SidecarAutoencoder(nn.Module):
     self.num_channels = num_channels
 
   def bottleneck_size(self) -> int:
-    return int((self.img_size/4)**2 * (self.num_channels * self.channel_mult**2))
+    if self.encoder_type == 'A':
+      return int((self.img_size/4)**2 * (self.num_channels * self.channel_mult**2))
+    elif self.encoder_type == 'B':
+      return int((self.img_size/2)**2 * (self.num_channels * self.channel_mult))
+    elif self.encoder_type == 'C':
+      return int((self.img_size/2)**2 * (self.num_channels / self.channel_mult))
+
       
   def calculate_upstream(self, x):
     x = self.upstream_layers(x)
@@ -104,14 +159,16 @@ class SupervisedSidecarAutoencoder(SidecarAutoencoder):
   img_size: int,
   channels: Tuple[int, int],
   dropout: float,
-  kernel_size:int):
+  kernel_size:int,
+  encoder_type:int):
 
     super().__init__(
       main_network_layer,
       img_size,
       channels,
       dropout,
-      kernel_size
+      kernel_size,
+      encoder_type
     )
 
     fc_layer_size = self.bottleneck_size()

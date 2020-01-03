@@ -398,6 +398,44 @@ class AutoencoderNet():
     #                 dc_imgs=decoding.cpu().detach().numpy(),
     #                 epoch=global_epoch)
 
+
+  def wave_train_test(self):
+    waves = 50
+    total_epochs = 0
+    layer_epochs = [0]*len(self.layer_configs)
+    for id_w in range(waves):
+      for id_c, config in enumerate(self.layer_configs): # LayerTrainingDefinition
+        if config.pretraining_load is None:
+          logging.info('### Training layer {} ###'.format(id_c)) 
+          wave_epoch_count = int(config.num_epochs / waves)
+          epoch = layer_epochs[id_c]
+          for wave_epoch in range(wave_epoch_count):
+            if config.layer_type == LayerType.Stack:
+              self.train(epoch, config=config, global_epoch=total_epochs)
+            elif config.layer_type == LayerType.VGGlinear:
+              self.train_vgg_classifier(epoch, config=config, global_epoch=total_epochs)
+            if total_epochs % self.test_every_n_epochs == 0:
+              if config.layer_type == LayerType.Stack:
+                self.test(epoch, config=config, global_epoch=total_epochs)
+              elif config.layer_type == LayerType.VGGlinear:
+                self.test_vgg_classifier(epoch, config=config, global_epoch=total_epochs)
+            total_epochs += 1
+            epoch += 1
+          layer_epochs[id_c] += wave_epoch_count
+          # end epoch loop
+
+
+          if config.pretraining_store is True:
+            path = '{}/{}_stack.pickle'.format(
+              config.model_base_path, 
+              config.layer_name
+            )
+            save_layer(config.stack, path)
+        
+        else:
+          logging.info('### Use pretrained tensors for {} ###'.format(id_c))
+
+
   def train_test(self):
     total_epochs = 0
     for id_c, config in enumerate(self.layer_configs): # LayerTrainingDefinition

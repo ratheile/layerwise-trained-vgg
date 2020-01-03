@@ -20,14 +20,20 @@ from typing import List, IO
 def load_layer(layer: nn.Module, path: str):
   return layer.load_state_dict(torch_load(path))
 
-def vgg_sidecar_layer(vgg: VGG, index:int, dropout:float, kernel_size:int) -> nn.Module:
+def vgg_sidecar_layer(
+vgg: VGG,
+index:int,
+dropout:float,
+kernel_size:int,
+encoder_type:int) -> nn.Module:
   vgg_layers, channels, img_size, _ = vgg.get_trainable_modules()[index]
   return SupervisedSidecarAutoencoder(
     vgg_layers,
     img_size,
     channels,
     dropout,
-    kernel_size)
+    kernel_size,
+    encoder_type)
 
 
 def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
@@ -35,7 +41,6 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
 
   # params from run config
   num_layers = len(rcfg['layers'])
-  learning_rate = rcfg['learning_rate']
   weight_decay = rcfg['weight_decay']
   color_channels = rcfg['color_channels']
   augmentation = rcfg['augmentation']
@@ -68,6 +73,7 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
     dropout_rate = layer['dropout_rate']
     model_type = layer['model']
     uprms = layer['upstream_params']
+    learning_rate = layer['learning_rate']
 
     # Prepare the model
     model = rcfg.switch(f'layers/{id_l}/model', {
@@ -76,7 +82,8 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       ),
       'VGGn': lambda: vgg_sidecar_layer(vgg, id_l,
         dropout=dropout_rate,
-        kernel_size=layer['kernel_size']
+        kernel_size=layer['kernel_size'],
+        encoder_type=layer['encoder_type']
       ),
       'VGGlinear': lambda: vgg
     }).to(device)
