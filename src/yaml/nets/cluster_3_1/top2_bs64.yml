@@ -16,7 +16,7 @@ vgg_version: A
 vgg_dropout: 0.5
 
 # Persistence path for later analysis
-model_path: trained_models/vgg_A
+model_path: trained_models/top2_bs64
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
