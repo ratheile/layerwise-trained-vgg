@@ -59,6 +59,24 @@ def semi_supervised_cifar10(
     transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))
   ])
 
+  heavy_10 = transforms.Compose([
+    transforms.RandomHorizontalFlip(),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomRotation(10),
+    transforms.ToTensor(),
+    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284)) 
+  ])
+
+  heavy_20 = transforms.Compose([
+    transforms.RandomHorizontalFlip(),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomRotation(20),
+    transforms.ToTensor(),
+    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284)) 
+  ])
+
   heavy_30 = transforms.Compose([
     transforms.RandomHorizontalFlip(),
     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
@@ -87,6 +105,8 @@ def semi_supervised_cifar10(
     'med_10': med_10,
     'med_20': med_20,
     'med_30': med_30,
+    'heavy_10': heavy_10,
+    'heavy_20': heavy_20,
     'heavy_30': heavy_30,
     'heavy_45': heavy_45
   }

@@ -1,6 +1,6 @@
 weight_decay: 0.0 # ADAM decay
 color_channels: 3
-supervised_ratio: 0.1
+supervised_ratio: 0.2
 augmentation: True
 batch_size: 128
 test_every_n_epochs: 1
