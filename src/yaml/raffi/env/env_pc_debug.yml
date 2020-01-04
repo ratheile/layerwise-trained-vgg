@@ -1,0 +1,13 @@
+logging:  INFO
+device: cuda
+# dataset_workers: !!python/tuple [6,6,2]
+dataset_workers: !!python/tuple [0,0,0]
+datasets:
+  mnist: 
+    path: '/home/shafall/datasets/mnist'
+    img_size: 28
+    num_classes: 10
+  cifar10:
+    path: '/home/shafall/datasets/cifar10'
+    img_size: 32
+    num_classes: 10

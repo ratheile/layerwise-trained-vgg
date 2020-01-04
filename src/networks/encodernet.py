@@ -398,6 +398,43 @@ class AutoencoderNet():
     #                 dc_imgs=decoding.cpu().detach().numpy(),
     #                 epoch=global_epoch)
 
+  def majority_vote(self, configs: List[LayerTrainingDefinition], global_epoch:int):  
+
+    # execution times
+    t_start = time.time_ns()
+    test_acc = 0
+
+    with torch.no_grad():
+      
+      for data in self.test_loader:
+        img, label = data[0], data[1]
+        num_layers = len(configs)
+        batch_size = len(label)
+        layer_predicted = torch.zeros((num_layers, batch_size)).to(self.device)
+        for id_c, config in enumerate(configs):
+          
+          # copy all vars to device and calculate the topmost stack representation
+          # TODO: avoid calculating this representation twice (here and in forward())
+          dev_img = config.stack.upwards(img.to(self.device))
+          dev_label = label.to(self.device)
+
+          # ===================Forward=====================
+          decoding, prediction = config.model(dev_img)
+          _, layer_predicted[id_c, :] = torch_max(prediction.data, 1)
+
+        predicted = layer_predicted.mode(dim=0)[0]
+        test_acc += (predicted.cpu().numpy() == label.numpy()).sum() / (len(self.test_loader) * len(label))
+
+    t_start, t_delta = self.measure_time(t_start)
+    logging.info('Epoch [{}]  Majority Vote Acc:{:.4f} Time: {:.2f}'
+      .format(
+        global_epoch + 1,
+        test_acc,
+        t_delta
+      )
+    )
+    self.writer.add_scalar('accuracy_total/maj_vote', test_acc, global_step=global_epoch)
+
 
   def wave_train_test(self):
     waves = self.waves
@@ -435,6 +472,8 @@ class AutoencoderNet():
         else:
           logging.info('### Use pretrained tensors for {} ###'.format(id_c))
 
+      valid_layers = list(filter(lambda x: x.layer_type == LayerType.Stack, self.layer_configs))
+      self.majority_vote(valid_layers, global_epoch=total_epochs)
 
   def train_test(self):
     total_epochs = 0
