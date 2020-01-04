@@ -5,7 +5,7 @@ augmentation: True
 batch_size: 128
 test_every_n_epochs: 1
 
-train_mode: 'sequential' # wave, sequential
+train_mode: 'wave' # wave, sequential
 waves: 50
 
 pred_loss_weight: 0.7 # "trainable" or  number (0,1)"

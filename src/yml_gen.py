@@ -45,7 +45,7 @@ def save_yml(data_dict, path):
 
 def patch_to_cfgs(cfg_path:str, patch_path: str) -> List[ConfigLoader]:
   patch = load_yml(patch_path)
-  experiment_name = patch['experiment_name']
+  experiment_base = patch['experiment_name']
   out_folder = patch['yml_output_folder']
   mkdir(out_folder)
 
@@ -58,7 +58,7 @@ def patch_to_cfgs(cfg_path:str, patch_path: str) -> List[ConfigLoader]:
       param_name = ''.join([s[0] for s in param_name])
       str_value = str(value).replace('.', '_')
 
-      experiment_name = f'{experiment_name}_{param_name}_{str_value}'
+      experiment_name = f'{experiment_base}_{param_name}={str_value}'
       cfg['model_path'] = f'trained_models/{experiment_name}'
       out_path = f'{out_folder}/{experiment_name}.yml'
 
@@ -67,7 +67,7 @@ def patch_to_cfgs(cfg_path:str, patch_path: str) -> List[ConfigLoader]:
       
 def permute_patch_to_cfgs(cfg_path:str, patch_path: str) -> List[ConfigLoader]:
   patch = load_yml(patch_path)
-  experiment_name = patch['experiment_name']
+  experiment_base = patch['experiment_name']
   out_folder = patch['yml_output_folder']
   mkdir(out_folder)
 
@@ -92,7 +92,7 @@ def permute_patch_to_cfgs(cfg_path:str, patch_path: str) -> List[ConfigLoader]:
       str_value = str(tple[id_k]).replace('.', '_')
       fn_prefix += f'_{param_name}={str_value}'
 
-    experiment_name = f'{experiment_name}{fn_prefix}'
+    experiment_name = f'{experiment_base}{fn_prefix}'
     cfg['model_path'] = f'trained_models/{experiment_name}'
     out_path = f'{out_folder}/{experiment_name}.yml'
 
