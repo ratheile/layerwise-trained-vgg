@@ -20,7 +20,7 @@ class VGG(nn.Module):
     batch_norm: bool):
 
     super().__init__()
-    layers, trainable_modules = self.make_modules(cfgs[vgg_version], img_size)
+    layers, trainable_modules = self.make_modules(cfgs[vgg_version], img_size, batch_norm=batch_norm)
     self.layers = nn.Sequential(*layers)
     self.trainable_modules = trainable_modules
 
@@ -67,7 +67,7 @@ class VGG(nn.Module):
   ]]:
     return self.trainable_modules
 
-  def make_modules(self, cfg, img_size, batch_norm=False) -> Tuple[
+  def make_modules(self, cfg, img_size, batch_norm: bool) -> Tuple[
     List[nn.Module],
     List[Tuple[
       List[nn.Module],
