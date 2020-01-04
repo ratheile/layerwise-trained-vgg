@@ -1,6 +1,8 @@
 experiment_name: ex1
-yml_output_folder: src/yaml/nets/raffi/cluster_4_1_1
+yml_output_folder: src/yaml/test/nets_gen/examples
 run_cfg:
   learning_rate: [0.1, 0.2, 0.3]
   layers/0/dropout_rate: [1]
   layers/0/encoder_type: ['A', 'B']
+  layers/4/encoder_type: ['A', 'B']
+  layers/1,2,3/encoder_type: ['FF', 'GG']

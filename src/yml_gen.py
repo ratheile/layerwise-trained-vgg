@@ -4,6 +4,7 @@ import os
 
 import yaml
 from yaml import FullLoader
+import uuid
 
 from itertools import product
 
@@ -51,14 +52,26 @@ def patch_to_cfgs(cfg_path:str, patch_path: str) -> List[ConfigLoader]:
 
   for key, values in patch['run_cfg'].items():
     for value in values:
-      cfg = ConfigLoader().from_file(cfg_path, suppress_print=True)
-      cfg[key] = value
-      assert cfg[key] == value
+      cfg = ConfigLoader().from_file(cfg_path, suppress_print=True) 
+
+      broadcast = key.split('/')
+      broadcast = broadcast[1].split(',') if len(broadcast) > 1 else None
+      if key.startswith('layers/') and broadcast is not None and len(broadcast) > 1:
+        layer_key = key.split('/')[-1]
+        for i in [int(j) for j in broadcast]:
+          b_key = f'layers/{i}/{layer_key}'
+          cfg[b_key] = value
+          assert cfg[b_key] == value
+      else:
+        cfg[key] = value
+        assert cfg[key] == value
+
       param_name = key.replace('/','_').split('_')
       param_name = ''.join([s[0] for s in param_name])
       str_value = str(value).replace('.', '_')
 
-      experiment_name = f'{experiment_base}_{param_name}={str_value}'
+      ex_uuid = uuid.uuid4().hex[0:6]
+      experiment_name = f'{experiment_base}_{ex_uuid}_{param_name}={str_value}'
       cfg['model_path'] = f'trained_models/{experiment_name}'
       out_path = f'{out_folder}/{experiment_name}.yml'
 
@@ -84,15 +97,26 @@ def permute_patch_to_cfgs(cfg_path:str, patch_path: str) -> List[ConfigLoader]:
     fn_prefix = ''
     cfg = ConfigLoader().from_file(cfg_path, suppress_print=True)
     for id_k, key in enumerate(keys):
-      cfg[key] = tple[id_k]
-      assert cfg[key] == tple[id_k]
+
+      broadcast = key.split('/')
+      broadcast = broadcast[1].split(',') if len(broadcast) > 1 else None
+      if key.startswith('layers/') and broadcast is not None and len(broadcast) > 1:
+        layer_key = key.split('/')[-1]
+        for i in [int(j) for j in broadcast]:
+          b_key = f'layers/{i}/{layer_key}'
+          cfg[b_key] = tple[id_k]
+          assert cfg[b_key] == tple[id_k]
+      else:
+        cfg[key] = tple[id_k]
+        assert cfg[key] == tple[id_k]
 
       param_name = key.replace('/','_').split('_')
       param_name = ''.join([s[0] for s in param_name])
       str_value = str(tple[id_k]).replace('.', '_')
       fn_prefix += f'_{param_name}={str_value}'
 
-    experiment_name = f'{experiment_base}{fn_prefix}'
+    ex_uuid = uuid.uuid4().hex[0:6]
+    experiment_name = f'{experiment_base}_{ex_uuid}_{fn_prefix}'
     cfg['model_path'] = f'trained_models/{experiment_name}'
     out_path = f'{out_folder}/{experiment_name}.yml'
 
