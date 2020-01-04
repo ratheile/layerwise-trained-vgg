@@ -17,6 +17,8 @@ ae_loss_function: (us+s)*(1-a)+p*a+r
 
 vgg_version: A
 vgg_dropout: 0.5
+vgg_batch_norm: True
+vgg_init_weights: True
 
 # Persistence path for later analysis
 model_path: trained_models/vgg_A

@@ -16,7 +16,8 @@ class VGG(nn.Module):
     dropout: float,
     img_size: int,
     vgg_version: str,
-    init_weights=True):
+    init_weights: bool,
+    batch_norm: bool):
 
     super().__init__()
     layers, trainable_modules = self.make_modules(cfgs[vgg_version], img_size)

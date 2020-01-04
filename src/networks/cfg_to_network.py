@@ -49,6 +49,8 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
 
   vgg_version = rcfg['vgg_version']
   vgg_dropout = rcfg['vgg_dropout']
+  vgg_init_weights = rcfg['vgg_init_weights']
+  vgg_batch_norm = rcfg['vgg_batch_norm']
 
   pred_loss_weight = rcfg['pred_loss_weight']
   ae_loss_function = rcfg['ae_loss_function']
@@ -66,7 +68,10 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
     num_classes=num_classes,
     dropout=vgg_dropout,
     img_size=img_size,
-    vgg_version=vgg_version) 
+    vgg_version=vgg_version,
+    init_weights=vgg_init_weights,
+    batch_norm=vgg_batch_norm
+  ) 
 
   for id_l, layer in enumerate(rcfg['layers']):
 
