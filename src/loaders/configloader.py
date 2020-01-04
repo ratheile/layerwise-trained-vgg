@@ -10,11 +10,12 @@ from typing import Dict, Callable
 
 class ConfigLoader(object):
 
-  def from_file(self, env_path: str = 'yaml/env.yml') -> ConfigLoader:
+  def from_file(self, env_path: str = 'yaml/env.yml', suppress_print=False) -> ConfigLoader:
     if os.path.isfile(env_path):
       with open(env_path) as env_file:
         self.env = yaml.load(env_file, Loader=FullLoader)
-      logging.info("Config {} is: {}".format(env_path, self.env))
+      if not suppress_print:
+        logging.info("Config {} is: {}".format(env_path, self.env))
     else:
       logging.warning('Config {} not found'.format(env_path))
     return self
@@ -55,3 +56,23 @@ class ConfigLoader(object):
       else:
         return self.env[key]
   
+
+  def __setitem__(self, key, item):
+    if isinstance(key, list) or isinstance(key, tuple):
+      val = self.env
+      for id_k, k in enumerate(key):
+        type_check = type(k) is str and isinstance(val, Iterable)
+        k = int(k) if str.isdigit(k) else k
+        existence_check = len(val) > k if isinstance(val, list) else (k in val)
+        if type_check and existence_check and id_k == len(key) - 1:
+          val[k] = item
+        elif type_check and existence_check:
+          val = val[k]
+        else:
+          raise ValueError("Error : Could not store key {} in  {}".format(k, key))
+    else:
+      subkeys = key.split('/')
+      if len(subkeys) > 1:
+        return self.__setitem__(subkeys, item)
+      else:
+        self.env[key] = item

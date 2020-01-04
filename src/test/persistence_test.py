@@ -15,7 +15,7 @@ class Test_Persistence(unittest.TestCase):
 
 
   def test_save(self):
-    cfg = ConfigLoader().from_file('yaml/env.yml')
+    cfg = ConfigLoader().from_file('yaml/env_template.yml')
     net = AutoencoderNet(cfg['datasets/cifar10/path'])
     layers: List[LayerTrainingDefinition] = net.layer_configs 
     net.save_layer(layers[0].model, self.file)
@@ -47,11 +47,12 @@ class Test_Persistence(unittest.TestCase):
     loader = ConfigLoader().from_string(document)
     self.assertEqual(loader['b/c'], 3)
     self.assertEqual(loader['a'], 1)
+    loader['a'] = 'bär'
+    self.assertEqual(loader['a'], 'bär')
     self.assertEqual(loader['b']['c'], 3)
     self.assertEqual(loader['b']['d'], 4)
     
     self.assertEqual(loader['b', 'c'], 3)
-
 
   def test_array(self):
     document = """
@@ -64,6 +65,12 @@ class Test_Persistence(unittest.TestCase):
     loader = ConfigLoader().from_string(document)
     self.assertEqual(loader['l/0/attr'], 1)
     self.assertEqual(loader['l/1/attr'], 2)
+    
+    loader['l/0/attr'] = 3
+    loader['l/1/attr'] = 4
+
+    self.assertEqual(loader['l/0/attr'], 3)
+    self.assertEqual(loader['l/1/attr'], 4)
     
 
 if __name__ == '__main__':
