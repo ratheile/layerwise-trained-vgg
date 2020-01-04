@@ -131,6 +131,7 @@ def semi_supervised_cifar10(
   ds_size = len(ds_train)
   assert supervised_ratio < 1 and supervised_ratio > 0
   ss_ds_len = int(ds_size * supervised_ratio)
+  us_ds_len = ds_size - ss_ds_len
 
   index_total = np.arange(ds_size)
   np.random.shuffle(index_total)
