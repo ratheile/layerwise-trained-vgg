@@ -400,17 +400,24 @@ class AutoencoderNet():
 
   def majority_vote(self, configs: List[LayerTrainingDefinition], global_epoch:int):  
 
+    # soft max to compare cross layers, soft max dim 1 == labels
+    soft_max = nn.Softmax(dim=1)
+
     # execution times
     t_start = time.time_ns()
     test_acc = 0
+    test_norm = 0
 
     with torch.no_grad():
-      
+      # TODO: Num classes should be a yaml param
+      num_classes = 10
+      num_batches = len(self.test_loader)
+      num_layers = len(configs)
+
       for data in self.test_loader:
         img, label = data[0], data[1]
-        num_layers = len(configs)
-        batch_size = len(label)
-        layer_predicted = torch.zeros((num_layers, batch_size)).to(self.device)
+        batch_size = len(label) # last batch might be smaller than regular batch size!
+        layer_predicted = torch.zeros(batch_size, num_classes).to(self.device)
         for id_c, config in enumerate(configs):
           
           # copy all vars to device and calculate the topmost stack representation
@@ -420,11 +427,14 @@ class AutoencoderNet():
 
           # ===================Forward=====================
           decoding, prediction = config.model(dev_img)
-          _, layer_predicted[id_c, :] = torch_max(prediction.data, 1)
+          layer_predicted += (soft_max(prediction.data) / num_layers)
 
-        predicted = layer_predicted.mode(dim=0)[0]
-        test_acc += (predicted.cpu().numpy() == label.numpy()).sum() / (len(self.test_loader) * len(label))
+        _, predicted = layer_predicted.max(dim=1)
 
+        test_acc += (predicted.cpu().numpy() == label.numpy()).sum()
+        test_norm += batch_size
+
+    test_acc = test_acc / test_norm
     t_start, t_delta = self.measure_time(t_start)
     logging.info('Epoch [{}]  Majority Vote Acc:{:.4f} Time: {:.2f}'
       .format(
@@ -461,6 +471,9 @@ class AutoencoderNet():
           layer_epochs[id_c] += wave_epoch_count
           # end epoch loop
 
+          # Use this snippet to debug majority vote!
+          # valid_layers = list(filter(lambda x: x.layer_type == LayerType.Stack, self.layer_configs))
+          # self.majority_vote(valid_layers, global_epoch=total_epochs)
 
           if config.pretraining_store is True:
             path = '{}/{}_stack.pickle'.format(
