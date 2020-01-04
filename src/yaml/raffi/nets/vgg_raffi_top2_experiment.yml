@@ -1,6 +1,6 @@
 weight_decay: 0.0 # ADAM decay
 color_channels: 3
-supervised_ratio: 0.2
+supervised_ratio: 0.1
 augmentation: True
 batch_size: 128
 test_every_n_epochs: 1
@@ -87,7 +87,7 @@ layers:
     kernel_size: 3
     encoder_type: C
     learning_rate: 0.001
-    dropout_rate: 0.65
+    dropout_rate: 0.6
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -99,7 +99,7 @@ layers:
     kernel_size: 3
     encoder_type: C
     learning_rate: 0.001
-    dropout_rate: 0.65
+    dropout_rate: 0.7
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -111,7 +111,7 @@ layers:
     kernel_size: 3
     encoder_type: C
     learning_rate: 0.001
-    dropout_rate: 0.65
+    dropout_rate: 0.7
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -123,7 +123,7 @@ layers:
     kernel_size: 3
     encoder_type: C
     learning_rate: 0.001
-    dropout_rate: 0.65
+    dropout_rate: 0.7
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
@@ -133,7 +133,7 @@ layers:
 
     # VGG Linear Layer (256)
   - num_epoch: 50
-    dropout_rate: 0.5
+    dropout_rate: 0.6
     learning_rate: 0.001
     model: VGGlinear # VGG n-th layer
     optimizer: Adam

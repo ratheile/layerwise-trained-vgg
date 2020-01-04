@@ -91,7 +91,8 @@ def permute_patch_to_cfgs(cfg_path:str, patch_path: str) -> List[ConfigLoader]:
     values.append(vals)
 
   permutations = list(product(*values))
-  
+  num_permutations = len(permutations)
+  logging.info(f"Generating {num_permutations} Permuted Configurations")
   # iterate over all permutation tuples
   for tple in permutations:
     fn_prefix = ''
