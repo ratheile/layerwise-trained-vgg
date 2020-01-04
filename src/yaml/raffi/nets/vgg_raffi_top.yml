@@ -5,7 +5,10 @@ augmentation: True
 batch_size: 128
 test_every_n_epochs: 1
 
-pred_loss_weight: 0.9 # "trainable" or  number (0,1)"
+train_mode: 'sequential' # wave, sequential
+waves: 50
+
+pred_loss_weight: 0.7 # "trainable" or  number (0,1)"
 
 # us*(1-a)+(s+p)*a+r
 # (us+s)*(1-a)+p*a+r
@@ -20,7 +23,7 @@ model_path: trained_models/vgg_A
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
-dataset_transform: heavy_20
+dataset_transform: heavy_10
 
 decoding_criterion: MSELoss # Supports: MSELoss
 prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
@@ -34,11 +37,11 @@ layers:
     encoder_type: A
     learning_rate: 0.001
     kernel_size: 3
-    dropout_rate: 0.6
+    dropout_rate: 0.7
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load: null
-    pretraining_store: True
+    pretraining_store: False
     upstream_params: null
 
   # Layer 1 (64)
@@ -50,7 +53,7 @@ layers:
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: True
+    pretraining_store: False
     upstream_params: null
 
   # Layer 2 (64)
@@ -58,11 +61,11 @@ layers:
     kernel_size: 3
     encoder_type: B
     learning_rate: 0.001
-    dropout_rate: 0.6
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: True
+    pretraining_store: False
     upstream_params: null
 
   # Layer 3 (128)
@@ -70,11 +73,11 @@ layers:
     kernel_size: 3
     encoder_type: B
     learning_rate: 0.001
-    dropout_rate: 0.6
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: True
+    pretraining_store: False
     upstream_params: null
 
   # Layer 4 (128)
@@ -82,11 +85,11 @@ layers:
     kernel_size: 3
     encoder_type: C
     learning_rate: 0.001
-    dropout_rate: 0.6
+    dropout_rate: 0.5
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: True
+    pretraining_store: False
     upstream_params: null
 
   # Layer 5 (256)
@@ -98,7 +101,7 @@ layers:
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: True
+    pretraining_store: False
     upstream_params: null
 
   # Layer 6 (256)
@@ -110,7 +113,7 @@ layers:
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: True
+    pretraining_store: False
     upstream_params: null
 
   # Layer 7 (256)
@@ -122,7 +125,7 @@ layers:
     model: VGGn # VGG n-th layer
     optimizer: Adam
     pretraining_load:  null
-    pretraining_store: True
+    pretraining_store: False
     upstream_params: null
 
 

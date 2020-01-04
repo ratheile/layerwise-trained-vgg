@@ -53,6 +53,7 @@ class AutoencoderNet():
     self.weight_decay  = rcfg['weight_decay']
     self.test_every_n_epochs = rcfg['test_every_n_epochs']
     self.pred_loss_weight = rcfg['pred_loss_weight']
+    self.waves = rcfg['waves']
 
     color_channels = rcfg['color_channels']
 
@@ -399,7 +400,7 @@ class AutoencoderNet():
 
 
   def wave_train_test(self):
-    waves = 50
+    waves = self.waves
     total_epochs = 0
     layer_epochs = [0]*len(self.layer_configs)
     for id_w in range(waves):

@@ -57,4 +57,8 @@ shutil.copy(run_cfg_path, f'{model_path}/{rcfg_fn}')
 shutil.copy(env_cfg_path, f'{model_path}/{ecfg_fn}')
 
 net = AutoencoderNet(env_cfg, run_cfg)
-net.wave_train_test()
+
+if run_cfg['train_mode'] == 'wave':
+  net.wave_train_test()
+else: 
+  net.train_test()
