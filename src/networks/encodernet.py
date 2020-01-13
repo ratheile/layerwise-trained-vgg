@@ -92,6 +92,7 @@ class AutoencoderNet():
 
     self.decoding_criterion = rcfg.switch('decoding_criterion', {
       'MSELoss': lambda: nn.MSELoss(),
+      'BCELoss': lambda: nn.BCEWithLogitsLoss()
     })
 
     self.pred_criterion = rcfg.switch('prediction_criterion', {
@@ -367,9 +368,8 @@ class AutoencoderNet():
         decoding, prediction = config.model(dev_img)
         loss_dc = self.decoding_criterion(decoding, dev_img)
         loss_pred = self.pred_criterion(prediction, dev_label)
-        combo_loss = loss_dc + 0.5 * loss_pred
         # Calculate Test Loss
-        test_loss += combo_loss.item() / (len(self.test_loader))
+        test_loss += loss_pred.item() / (len(self.test_loader))
         # Calculate Accuracy
         _, predicted = torch_max(prediction.data, 1)
         test_acc += (predicted.cpu().numpy() == label.numpy()).sum() / (len(self.test_loader) * len(label))
@@ -453,7 +453,7 @@ class AutoencoderNet():
     for id_w in range(waves):
       for id_c, config in enumerate(self.layer_configs): # LayerTrainingDefinition
         if config.pretraining_load is None:
-          logging.info('### Training layer {} ###'.format(id_c)) 
+          logging.info('### Training layer {} ###'.format(id_c+1)) 
           wave_epoch_count = int(config.num_epochs / waves)
           epoch = layer_epochs[id_c]
           for wave_epoch in range(wave_epoch_count):

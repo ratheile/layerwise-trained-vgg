@@ -16,7 +16,6 @@ class VGG(nn.Module):
     dropout: float,
     img_size: int,
     vgg_version: str,
-    init_weights: bool,
     batch_norm: bool):
 
     super().__init__()
@@ -28,15 +27,12 @@ class VGG(nn.Module):
     self.classifier = nn.Sequential(
       # take size from last vgg layer
       nn.Linear(cfgs[vgg_version][-1] * 4 * 4, 1024), 
-      nn.LeakyReLU(inplace=True),
+      nn.ReLU(inplace=True),
       nn.Dropout(dropout),
       nn.Linear(1024, num_classes),
     )
 
     self.vgg_dropout = dropout
-
-    if init_weights:
-        self._initialize_weights()
 
   def forward(self, x):
     with torch.no_grad():
@@ -45,19 +41,6 @@ class VGG(nn.Module):
     x = torch.flatten(x, 1)
     x = self.classifier(x)
     return x
-
-  def _initialize_weights(self):
-    for m in self.modules():
-      if isinstance(m, nn.Conv2d):
-        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='leaky_relu')
-        if m.bias is not None:
-            nn.init.constant_(m.bias, 0)
-      elif isinstance(m, nn.BatchNorm2d):
-        nn.init.constant_(m.weight, 1)
-        nn.init.constant_(m.bias, 0)
-      elif isinstance(m, nn.Linear):
-        nn.init.normal_(m.weight, 0, 0.01)
-        nn.init.constant_(m.bias, 0)
  
   def get_trainable_modules(self) -> List[Tuple[
     List[nn.Module],

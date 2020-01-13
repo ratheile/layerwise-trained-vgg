@@ -9,82 +9,83 @@ from typing import List, Callable, Tuple
 
 encoders_dict = {
 
-  'A': lambda dropout, num_channels, channel_mult, c2d_args, bn_args: nn.Sequential(
+  'A': lambda dropout, num_channels, channel_mult, c2d_args: nn.Sequential(
     nn.Dropout(dropout),
     
     nn.MaxPool2d(kernel_size=2, stride=2),
     nn.Conv2d(in_channels=num_channels, out_channels=num_channels*(channel_mult), **c2d_args), 
-    nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),
-    nn.Dropout(dropout),
+    nn.BatchNorm2d(num_features=num_channels*(channel_mult)),
     nn.LeakyReLU(True),   
+    nn.Dropout(dropout),
 
     nn.MaxPool2d(kernel_size=2, stride=2),
     nn.Conv2d(in_channels=num_channels*(channel_mult), out_channels=num_channels*(channel_mult**2), **c2d_args), 
-    nn.BatchNorm2d(num_features=num_channels*(channel_mult**2), **bn_args),
+    nn.BatchNorm2d(num_features=num_channels*(channel_mult**2)),
+    nn.LeakyReLU(True),
     nn.Dropout(dropout),
-    nn.LeakyReLU(True),  
   ), 
 
-  'B': lambda dropout, num_channels, channel_mult, c2d_args, bn_args: nn.Sequential(
+  'B': lambda dropout, num_channels, channel_mult, c2d_args: nn.Sequential(
     nn.Dropout(dropout),
     
     nn.MaxPool2d(kernel_size=2, stride=2),
     nn.Conv2d(in_channels=num_channels, out_channels=num_channels*(channel_mult), **c2d_args), 
-    nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),
-    nn.Dropout(dropout),
-    nn.LeakyReLU(True),   
+    nn.BatchNorm2d(num_features=num_channels*(channel_mult)),
+    nn.LeakyReLU(True),
+    nn.Dropout(dropout),   
   ),
 
-  'C': lambda dropout, num_channels, channel_mult, c2d_args, bn_args: nn.Sequential(
+  'C': lambda dropout, num_channels, channel_mult, c2d_args: nn.Sequential(
     nn.Dropout(dropout),
     
     nn.MaxPool2d(kernel_size=2, stride=2),
     # Reduce channel sizes instead of increasing them in B here:
     nn.Conv2d(in_channels=num_channels, out_channels=int(num_channels/(channel_mult)), **c2d_args), 
-    nn.BatchNorm2d(num_features=int(num_channels/(channel_mult)), **bn_args),
-    nn.Dropout(dropout),
-    nn.LeakyReLU(True),   
+    nn.BatchNorm2d(num_features=int(num_channels/(channel_mult))),
+    nn.LeakyReLU(True),
+    nn.Dropout(dropout),   
   )
 }
 
 decoders_dict = {
 
-  'A': lambda dropout, num_channels, channel_mult, c2d_args, bn_args, in_channels: nn.Sequential(
+  'A': lambda dropout, num_channels, channel_mult, c2d_args, in_channels: nn.Sequential(
     Interpolate(),                
     nn.Conv2d(in_channels=num_channels*(channel_mult**2), out_channels=num_channels*(channel_mult), **c2d_args),       
-    nn.BatchNorm2d(num_features=num_channels*(channel_mult), **bn_args),
+    nn.BatchNorm2d(num_features=num_channels*(channel_mult)),
     nn.LeakyReLU(True),
+    nn.Dropout(dropout),
 
     Interpolate(),                
     nn.Conv2d(in_channels=num_channels*(channel_mult), out_channels=num_channels, **c2d_args),       
-    nn.BatchNorm2d(num_features=num_channels, **bn_args),
+    nn.BatchNorm2d(num_features=num_channels),
     nn.LeakyReLU(True),
+    nn.Dropout(dropout),
 
     nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
-    nn.BatchNorm2d(num_features=in_channels, **bn_args),
-    nn.Sigmoid()
+    nn.BatchNorm2d(num_features=in_channels)
   ),
 
-  'B': lambda dropout, num_channels, channel_mult, c2d_args, bn_args, in_channels: nn.Sequential(
+  'B': lambda dropout, num_channels, channel_mult, c2d_args, in_channels: nn.Sequential(
     Interpolate(),                
     nn.Conv2d(in_channels=num_channels*(channel_mult), out_channels=num_channels, **c2d_args),       
-    nn.BatchNorm2d(num_features=num_channels, **bn_args),
+    nn.BatchNorm2d(num_features=num_channels),
     nn.LeakyReLU(True),
+    nn.Dropout(dropout),
 
     nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
-    nn.BatchNorm2d(num_features=in_channels, **bn_args),
-    nn.Sigmoid()
+    nn.BatchNorm2d(num_features=in_channels)
   ),
 
-  'C': lambda dropout, num_channels, channel_mult, c2d_args, bn_args, in_channels: nn.Sequential(
+  'C': lambda dropout, num_channels, channel_mult, c2d_args, in_channels: nn.Sequential(
     Interpolate(),                
     nn.Conv2d(in_channels=int(num_channels/(channel_mult)), out_channels=num_channels, **c2d_args),       
-    nn.BatchNorm2d(num_features=num_channels, **bn_args),
+    nn.BatchNorm2d(num_features=num_channels),
     nn.LeakyReLU(True),
+    nn.Dropout(dropout),
 
     nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
-    nn.BatchNorm2d(num_features=in_channels, **bn_args),
-    nn.Sigmoid()
+    nn.BatchNorm2d(num_features=in_channels)
   )
 }
 class SidecarAutoencoder(nn.Module):
@@ -97,13 +98,6 @@ class SidecarAutoencoder(nn.Module):
   encoder_type:str):
 
     super().__init__()
-
-    bn_args = {
-      "eps":1e-05,
-      "momentum":0.1,
-      "affine":True,
-      "track_running_stats":True 
-    }
 
     c2d_args = { 
       "kernel_size":kernel_size,
@@ -121,12 +115,12 @@ class SidecarAutoencoder(nn.Module):
     # First dropout layer is for upstream training, but should not be there in upstream processing
     self.encoder = encoders_dict[encoder_type](
       dropout, num_channels,
-      channel_mult, c2d_args, bn_args
+      channel_mult, c2d_args
     )
 
     self.decoder = decoders_dict[encoder_type](
       dropout, num_channels,
-      channel_mult, c2d_args, bn_args, in_channels
+      channel_mult, c2d_args, in_channels
     )
 
     self.img_size = img_size
@@ -175,7 +169,10 @@ class SupervisedSidecarAutoencoder(SidecarAutoencoder):
     self.supervision = nn.Sequential(
       FCView(),
       nn.Linear(in_features=fc_layer_size, out_features=100),
+      nn.ReLU(True),
+      nn.Dropout(dropout),
       nn.Linear(in_features=100, out_features=10),
+      nn.sigmoid()
     )
 
   def forward(self, x):

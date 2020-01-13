@@ -69,7 +69,6 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
     dropout=vgg_dropout,
     img_size=img_size,
     vgg_version=vgg_version,
-    init_weights=vgg_init_weights,
     batch_norm=vgg_batch_norm
   ) 
 
