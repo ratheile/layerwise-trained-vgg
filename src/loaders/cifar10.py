@@ -32,32 +32,28 @@ def semi_supervised_cifar10(
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
 
   light = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize([0.5], [0.5])
+    transforms.ToTensor()
   ])
 
   med_30 = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomRotation(30),
     transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))
+    transforms.ToTensor()
   ])
 
   med_20 = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomRotation(20),
     transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))
+    transforms.ToTensor()
   ])
 
   med_10 = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomRotation(10),
     transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))
+    transforms.ToTensor()
   ])
 
   heavy_10 = transforms.Compose([
@@ -65,8 +61,7 @@ def semi_supervised_cifar10(
     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
     transforms.RandomCrop(32, padding=4),
     transforms.RandomRotation(10),
-    transforms.ToTensor(),
-    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284)) 
+    transforms.ToTensor()
   ])
 
   heavy_20 = transforms.Compose([
@@ -74,8 +69,7 @@ def semi_supervised_cifar10(
     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
     transforms.RandomCrop(32, padding=4),
     transforms.RandomRotation(20),
-    transforms.ToTensor(),
-    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284)) 
+    transforms.ToTensor()
   ])
 
   heavy_30 = transforms.Compose([
@@ -83,8 +77,7 @@ def semi_supervised_cifar10(
     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
     transforms.RandomCrop(32, padding=4),
     transforms.RandomRotation(30),
-    transforms.ToTensor(),
-    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284)) 
+    transforms.ToTensor()
   ])
 
   heavy_45 = transforms.Compose([
@@ -92,13 +85,11 @@ def semi_supervised_cifar10(
     transforms.RandomRotation(45),
     transforms.RandomHorizontalFlip(),
     transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),
-    transforms.ToTensor(),
-    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284)) # TODO: WHY???
+    transforms.ToTensor()
   ])
 
   test_transform = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize((0.424, 0.415, 0.384), (0.283, 0.278, 0.284))
   ])
 
   transforms_dict = {
