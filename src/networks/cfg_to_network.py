@@ -25,7 +25,8 @@ vgg: VGG,
 index:int,
 dropout:float,
 kernel_size:int,
-encoder_type:int) -> nn.Module:
+encoder_type:int,
+num_classes:int) -> nn.Module:
   vgg_layers, channels, img_size, _ = vgg.get_trainable_modules()[index]
   return SupervisedSidecarAutoencoder(
     vgg_layers,
@@ -33,7 +34,8 @@ encoder_type:int) -> nn.Module:
     channels,
     dropout,
     kernel_size,
-    encoder_type)
+    encoder_type,
+    num_classes)
 
 
 def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
@@ -87,7 +89,8 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
       'VGGn': lambda: vgg_sidecar_layer(vgg, id_l,
         dropout=dropout_rate,
         kernel_size=layer['kernel_size'],
-        encoder_type=layer['encoder_type']
+        encoder_type=layer['encoder_type'],
+        num_classes=num_classes
       ),
       'VGGlinear': lambda: vgg
     }).to(device)

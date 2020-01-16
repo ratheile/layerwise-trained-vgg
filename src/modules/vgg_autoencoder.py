@@ -154,7 +154,8 @@ class SupervisedSidecarAutoencoder(SidecarAutoencoder):
   channels: Tuple[int, int],
   dropout: float,
   kernel_size:int,
-  encoder_type:int):
+  encoder_type:int,
+  num_classes: int):
 
     super().__init__(
       main_network_layer,
@@ -171,8 +172,8 @@ class SupervisedSidecarAutoencoder(SidecarAutoencoder):
       nn.Linear(in_features=fc_layer_size, out_features=100),
       nn.ReLU(True),
       nn.Dropout(dropout),
-      nn.Linear(in_features=100, out_features=10),
-      nn.sigmoid()
+      nn.Linear(in_features=100, out_features=num_classes),
+      #nn.Sigmoid(),
     )
 
   def forward(self, x):
