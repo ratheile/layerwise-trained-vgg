@@ -1,0 +1,4 @@
+experiment_name: ex2
+yml_output_folder: src/yaml/raffi/nets_gen/cluster_4_5_3
+run_cfg:
+  weight_decay: [0.001, 0.005, 0.01]
