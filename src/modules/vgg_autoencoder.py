@@ -172,7 +172,7 @@ class SupervisedSidecarAutoencoder(SidecarAutoencoder):
       nn.ReLU(True),
       nn.Dropout(dropout),
       nn.Linear(in_features=100, out_features=10),
-      nn.sigmoid()
+      nn.Sigmoid()
     )
 
   def forward(self, x):
