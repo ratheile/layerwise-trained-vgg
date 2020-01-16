@@ -1,3 +1,7 @@
+r"""
+encodernet.py
+======================
+"""
 from modules import StackableNetwork, NetworkStack, SidecarMap
 
 from .layer_training_def import LayerTrainingDefinition, LayerType
@@ -30,6 +34,7 @@ import matplotlib.pyplot as plt
 
 from typing import List, IO
 
+
 def ensure_dir(path: str):
     directory = os.path.dirname(path)
     if not os.path.exists(directory):
@@ -41,6 +46,9 @@ def save_layer(layer: nn.Module, path:str):
   torch_save(layer.state_dict(), path)
 
 class AutoencoderNet():
+  r"""
+  Test
+  """
 
   def __init__(self, gcfg: ConfigLoader, rcfg: ConfigLoader):
 
