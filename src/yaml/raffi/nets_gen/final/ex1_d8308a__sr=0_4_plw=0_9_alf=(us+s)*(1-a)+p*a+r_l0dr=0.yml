@@ -1,12 +1,12 @@
 ae_loss_function: (us+s)*(1-a)+p*a+r
-augmentation: false
-batch_size: 100
+augmentation: true
+batch_size: 128
 color_channels: 3
 dataset: cifar10
 dataset_transform: heavy_10
 decoding_criterion: MSELoss
 layers:
-- dropout_rate: 0.001
+- dropout_rate: 0
   encoder_type: A
   kernel_size: 3
   learning_rate: 0.0008
@@ -16,7 +16,7 @@ layers:
   pretraining_load: null
   pretraining_store: false
   upstream_params: null
-- dropout_rate: 0.001
+- dropout_rate: 0
   encoder_type: A
   kernel_size: 3
   learning_rate: 0.0007
@@ -26,7 +26,7 @@ layers:
   pretraining_load: null
   pretraining_store: false
   upstream_params: null
-- dropout_rate: 0.001
+- dropout_rate: 0
   encoder_type: A
   kernel_size: 3
   learning_rate: 0.0006
@@ -36,7 +36,7 @@ layers:
   pretraining_load: null
   pretraining_store: false
   upstream_params: null
-- dropout_rate: 0.001
+- dropout_rate: 0
   encoder_type: A
   kernel_size: 3
   learning_rate: 0.00051
@@ -46,7 +46,7 @@ layers:
   pretraining_load: null
   pretraining_store: false
   upstream_params: null
-- dropout_rate: 0.001
+- dropout_rate: 0
   encoder_type: A
   kernel_size: 3
   learning_rate: 0.00042
@@ -56,7 +56,7 @@ layers:
   pretraining_load: null
   pretraining_store: false
   upstream_params: null
-- dropout_rate: 0.001
+- dropout_rate: 0
   encoder_type: A
   kernel_size: 3
   learning_rate: 0.00033
@@ -66,7 +66,7 @@ layers:
   pretraining_load: null
   pretraining_store: false
   upstream_params: null
-- dropout_rate: 0.001
+- dropout_rate: 0
   encoder_type: A
   kernel_size: 3
   learning_rate: 0.00024
@@ -76,7 +76,7 @@ layers:
   pretraining_load: null
   pretraining_store: false
   upstream_params: null
-- dropout_rate: 0.001
+- dropout_rate: 0
   encoder_type: A
   kernel_size: 3
   learning_rate: 0.00016
@@ -94,10 +94,10 @@ layers:
   pretraining_load: null
   pretraining_store: false
   upstream_params: null
-model_path: trained_models/koktay_1
-pred_loss_weight: 1.0
+model_path: trained_models/ex1_d8308a__sr=0_4_plw=0_9_alf=(us+s)*(1-a)+p*a+r_l0dr=0
+pred_loss_weight: 0.9
 prediction_criterion: CrossEntropyLoss
-supervised_ratio: 0.95
+supervised_ratio: 0.4
 test_every_n_epochs: 1
 train_mode: wave
 vgg_batch_norm: true

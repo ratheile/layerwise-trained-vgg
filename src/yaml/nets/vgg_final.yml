@@ -1,10 +1,23 @@
 ae_loss_function: (us+s)*(1-a)+p*a+r
-augmentation: false
-batch_size: 100
+augmentation: true
+batch_size: 128
 color_channels: 3
 dataset: cifar10
 dataset_transform: heavy_10
 decoding_criterion: MSELoss
+model_path: trained_models/koktay_1
+pred_loss_weight: 1.0
+prediction_criterion: CrossEntropyLoss
+supervised_ratio: 0.08
+test_every_n_epochs: 1
+train_mode: wave
+vgg_batch_norm: true
+vgg_dropout: 0.001
+vgg_init_weights: true
+vgg_version: A
+waves: 25
+weight_decay: 0.0
+
 layers:
 - dropout_rate: 0.001
   encoder_type: A
@@ -94,15 +107,4 @@ layers:
   pretraining_load: null
   pretraining_store: false
   upstream_params: null
-model_path: trained_models/koktay_1
-pred_loss_weight: 1.0
-prediction_criterion: CrossEntropyLoss
-supervised_ratio: 0.95
-test_every_n_epochs: 1
-train_mode: wave
-vgg_batch_norm: true
-vgg_dropout: 0.001
-vgg_init_weights: true
-vgg_version: A
-waves: 25
-weight_decay: 0.0
+

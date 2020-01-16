@@ -1,0 +1,7 @@
+experiment_name: ex1
+yml_output_folder: src/yaml/raffi/nets_gen/final
+run_cfg:
+  supervised_ratio: [0.08, 0.1, 0.2, 0.4]
+  pred_loss_weight: [0.5, 0.7, 0.9, 1.0]
+  ae_loss_function: ['(us+s)*(1-a)+p*a+r', 'us*(1-a)+(s+p)*a+r']
+  layers/0,1,2,3,4,5,6,7/dropout_rate: [0, 0.1, 0.5]

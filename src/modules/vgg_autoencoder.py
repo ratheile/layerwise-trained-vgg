@@ -172,8 +172,8 @@ class SupervisedSidecarAutoencoder(SidecarAutoencoder):
       nn.Linear(in_features=fc_layer_size, out_features=100),
       nn.ReLU(True),
       nn.Dropout(dropout),
-      nn.Linear(in_features=100, out_features=num_classes),
-      #nn.Sigmoid(),
+      nn.Linear(in_features=100, out_features=num_classes)
+      # last non-linearity should (and is) included in the loss function
     )
 
   def forward(self, x):
