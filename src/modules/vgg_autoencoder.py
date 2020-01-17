@@ -194,10 +194,10 @@ class SupervisedSidecarAutoencoder(SidecarAutoencoder):
     fc_layer_size = self.bottleneck_size()
     self.supervision = nn.Sequential(
       FCView(),
-      nn.Linear(in_features=fc_layer_size, out_features=100),
+      nn.Linear(in_features=fc_layer_size, out_features=512),
       nn.ReLU(True),
       nn.Dropout(dropout),
-      nn.Linear(in_features=100, out_features=num_classes)
+      nn.Linear(in_features=512, out_features=num_classes)
       # last non-linearity should (and is) included in the loss function
     )
 

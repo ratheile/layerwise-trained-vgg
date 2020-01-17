@@ -413,7 +413,7 @@ class AutoencoderNet():
         loss_dc = self.decoding_criterion(decoding, dev_img)
         loss_pred = self.pred_criterion(prediction, dev_label)
         # Calculate Test Loss
-        test_loss += loss_pred.item() / (len(self.test_loader))
+        test_loss += (loss_pred.item()+loss_dc.item()) / (len(self.test_loader))
         # Calculate Accuracy
         _, predicted = torch_max(prediction.data, 1)
         test_acc += (predicted.cpu().numpy() == label.numpy()).sum() / (len(self.test_loader) * len(label))
