@@ -82,5 +82,7 @@ if __name__ == "__main__":
 
   if run_cfg['train_mode'] == 'wave':
     net.wave_train_test()
+  elif run_cfg['train_mode'] == 'visu':
+    net.visualize()
   else: 
     net.train_test()
