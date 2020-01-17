@@ -15,6 +15,7 @@ from .cfg_to_network import cfg_to_network
 
 from loaders import semi_supervised_mnist, semi_supervised_cifar10, semi_supervised_cifar100
 from loaders import ConfigLoader
+from visualizations import CNNLayerVisualization
 
 import torch
 from torch.autograd import Variable
@@ -573,7 +574,7 @@ class AutoencoderNet():
           total_epochs += 1
           if total_epochs % self.test_every_n_epochs == 0:
             if config.layer_type == LayerType.Stack:
-              self.test(epoch, config=config, global_epoch=total_epochs)
+              self.test(epoch, config=configfrom visualizations import CNNLayerVisualization, global_epoch=total_epochs)
             elif config.layer_type == LayerType.VGGlinear:
               self.test_vgg_classifier(epoch, config=config, global_epoch=total_epochs)
         # end epoch loop
@@ -588,3 +589,52 @@ class AutoencoderNet():
       
       else:
         logging.info('### Use pretrained tensors for {} ###'.format(id_c))
+      
+  def visualize(self, epoch = 0): 
+  
+    logging.info("## visualize layer ##") 
+    
+    total_epochs = 0
+    lc = len(self.layer_configs)
+    img_list = []
+    layer_to_hook = 22
+    filter_to_hook = 1
+    layers = []
+
+    #extract VGG networks from layerstack as sequential 
+
+    for id_c, config in enumerate(self.layer_configs):  
+      if id_c == 7: 
+        for index in range(0,7):
+          layers.append( config.stack.networks_sn[index].upstream_layers[0] )
+          layers.append( config.stack.networks_sn[index].upstream_layers[1])
+          layers.append( config.stack.networks_sn[index].upstream_layers[2] )
+
+          if not ( config.stack.networks_maps[index] is None):
+            # print("Added maxpool") 
+            layers.append( config.stack.networks_maps[index].function[0] )
+      
+    net = nn.Sequential(*layers).cpu() 
+    
+    #visualize all cnn layers. 
+    #write output to tensorboard
+    layer_to_vis = [0,3,7,10,14,17,21]
+    for f in range (0,10):
+      for l_id in layer_to_vis:
+      
+        layer_vis = CNNLayerVisualization( 
+          net , 
+          l_id, 
+          f)
+
+        imgs_list = layer_vis.visualise_layer_with_hooks(
+          epoches = 50, 
+          samples = 1) 
+
+        np_data = np.swapaxes(np.squeeze(np.asarray(imgs_list)) ,0,2) 
+
+        self.writer.add_image(
+          "conv_layer%d_f%d"%(l_id,f), 
+          np_data,
+          global_step= f)
+  
