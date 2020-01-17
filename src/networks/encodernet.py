@@ -13,7 +13,7 @@ from modules import StackableNetwork, NetworkStack, SidecarMap
 from .layer_training_def import LayerTrainingDefinition, LayerType
 from .cfg_to_network import cfg_to_network
 
-from loaders import semi_supervised_mnist, semi_supervised_cifar10
+from loaders import semi_supervised_mnist, semi_supervised_cifar10, semi_supervised_cifar100
 from loaders import ConfigLoader
 
 import torch
@@ -87,11 +87,20 @@ class AutoencoderNet():
         augmentation=rcfg['augmentation'],
         num_workers=dataset_workers
       ),
+      'cifar100': lambda: semi_supervised_cifar100(
+        data_path,
+        dataset_transform,
+        supervised_ratio=rcfg['supervised_ratio'],
+        batch_size=rcfg['batch_size'],
+        augmentation=rcfg['augmentation'],
+        num_workers=dataset_workers
+      ),
       'mnist': lambda: semi_supervised_mnist(
         data_path,
         supervised_ratio=rcfg['supervised_ratio'],
         batch_size=rcfg['batch_size']
-      )})
+      )
+      })
 
     self.layer_configs = cfg_to_network(gcfg, rcfg)
     assert len(self.supervised_loader) == len(self.unsupvised_loader)
