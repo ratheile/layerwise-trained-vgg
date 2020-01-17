@@ -1,7 +1,13 @@
 r"""
 encodernet.py
 ======================
+This module combines all the custom network modules and defines
+the schedule how to train and evaluate our networks.
+
+.. autosummary::
+  networks.encodernet.AutoencoderNet
 """
+
 from modules import StackableNetwork, NetworkStack, SidecarMap
 
 from .layer_training_def import LayerTrainingDefinition, LayerType
@@ -34,7 +40,6 @@ import matplotlib.pyplot as plt
 
 from typing import List, IO
 
-
 def ensure_dir(path: str):
     directory = os.path.dirname(path)
     if not os.path.exists(directory):
@@ -47,7 +52,10 @@ def save_layer(layer: nn.Module, path:str):
 
 class AutoencoderNet():
   r"""
-  Test
+  Main Class of this project. Groups all the functions to run a network 
+  but is not responsible to assemble the network configuration /  hyperparameters. 
+  Most of the functions accept a LayerTrainingDefinition 
+  or a ConfigLoader to access the training parameters.
   """
 
   def __init__(self, gcfg: ConfigLoader, rcfg: ConfigLoader):
@@ -142,6 +150,11 @@ class AutoencoderNet():
     return current, delta
 
   def train_vgg_classifier(self, epoch: int, global_epoch:int,  config: LayerTrainingDefinition):
+    r"""
+    The vgg network has its own classification layer with a cost function that differs from the usual
+    autoencoder network block. Therefore it has its own training method.
+    """
+
     #TODO: check if still necessary self.model.train()
 
     tot_t_dataload = 0
@@ -207,6 +220,10 @@ class AutoencoderNet():
           global_epoch:int, 
           config: LayerTrainingDefinition,
           plot_every_n_epochs=1):
+    r"""
+    The vgg network has its own classification layer with a cost function that differs from the usual
+    autoencoder network block. Therefore it has its own test method.
+    """
 
     # TODO: figure out if necessaryself self.model.eval()
     test_loss = 0
@@ -248,7 +265,12 @@ class AutoencoderNet():
     self.writer.add_scalar('accuracy_linear/test', test_acc, global_step=global_epoch)
 
   def train(self, epoch: int, global_epoch:int,  config: LayerTrainingDefinition):
-    #TODO: check if still necessary self.model.train()
+    r"""
+    This method is the default train method for a horizontal autoencoder network block.
+    It takes care of dataset iteration and loss calculation / optimization.
+    It operates on a given config of type LayerTrainingDefinition.
+    This code represents what needs to be done in one epoch of training.
+    """
 
     tot_t_dataload = 0
     tot_t_upstream = 0
@@ -353,8 +375,12 @@ class AutoencoderNet():
           global_epoch:int, 
           config: LayerTrainingDefinition,
           plot_every_n_epochs=1):
+    r"""
+    This method is the default test method for a horizontal autoencoder network block.
+    It operates on a given config of type LayerTrainingDefinition.
+    The method freezes the current layer and computes the test accuracy.
+    """
 
-    # TODO: figure out if necessaryself self.model.eval()
     test_loss = 0
     test_acc = 0
 
@@ -407,6 +433,12 @@ class AutoencoderNet():
     #                 epoch=global_epoch)
 
   def majority_vote(self, configs: List[LayerTrainingDefinition], global_epoch:int):  
+    r"""
+    This function implements a voting scheme over all layers.
+    It uses a layer-wise softmax prediction. The final decision is taken as argmax
+    over the mean of the individual distributions.
+    """
+
 
     # soft max to compare cross layers, soft max dim 1 == labels
     soft_max = nn.Softmax(dim=1)
@@ -455,6 +487,19 @@ class AutoencoderNet():
 
 
   def wave_train_test(self):
+    r"""
+    This function defines the overall training schedule over the total number of epochs.
+    It trains the layer in a wave-like pattern:
+
+      - Layer 0 is trained for (total_epochs / waves) epochs
+      - Layer 1 is trained for (total_epochs / waves) epochs
+
+    after the final layer is trained, we return back to layer 0.
+
+    This method converges much quicker than strict sequential training.
+    
+    It is called from the main script after class initialization to start the training.
+    """
     waves = self.waves
     total_epochs = 0
     layer_epochs = [0]*len(self.layer_configs)
@@ -497,6 +542,16 @@ class AutoencoderNet():
       self.majority_vote(valid_layers, global_epoch=total_epochs)
 
   def train_test(self):
+    r"""
+    This function defines the overall training schedule over the total number of epochs.
+    It trains the layer one by one:
+    
+    - First layer 0 is trained for n epochs
+    - Then layer 1 is trained for n epochs
+    - etc...
+
+    It is called from the main script after class initialization to start the training.
+    """
     total_epochs = 0
     for id_c, config in enumerate(self.layer_configs): # LayerTrainingDefinition
       if config.pretraining_load is None:

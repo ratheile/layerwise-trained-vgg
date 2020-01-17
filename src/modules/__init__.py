@@ -7,7 +7,6 @@ from .network_stack import NetworkStack
 
 from .maps import RandomMap, \
   ConvMap, \
-  InterpolationMap, \
   DecoderMap, \
   SidecarMap
 
@@ -29,7 +28,6 @@ __all__ = (
   'FCView',
   'RandomMap',
   'ConvMap',
-  'InterpolationMap',
   'DecoderMap',
   'SidecarMap',
   'VGG'

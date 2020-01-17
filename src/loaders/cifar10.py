@@ -1,3 +1,13 @@
+r"""
+cifar10.py
+============
+
+Dataset wrappers to use cifar10 in a semi-supervised fashion.
+
+.. autosummary::
+  loaders.cifar10.CifarSubsetSampler
+  loaders.cifar10.semi_supervised_cifar10
+"""
 from torch import Tensor, randperm
 from torchvision.datasets import CIFAR10
 from torch.utils.data import DataLoader, Sampler
@@ -12,6 +22,12 @@ from math import ceil
 import numpy as np
 
 class CifarSubsetSampler(Sampler):
+  r"""
+  This class randomly permutes a set of indicies of the cifar10 dataset.
+  We need this sampler to restrict the dataset class to only provide
+  permuted batches of data from one one the strictly separated supervised
+  and unsupervised sets.
+  """
   def __init__(self, indices):
       self.indices = indices
 
@@ -30,6 +46,15 @@ def semi_supervised_cifar10(
   augmentation=False,
   num_workers=(6,6,2)
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
+  r"""
+  Provides the three dataloaders:
+   
+  * Testset Dataloader
+  * Training Set Dataloader (Supervised Dataset)
+  * Training Set Dataloader (Unsupervised Dataset)
+
+  It wraps the pytorch cifar10 dataset class.
+  """
 
   light = transforms.Compose([
     transforms.ToTensor()
@@ -92,6 +117,8 @@ def semi_supervised_cifar10(
     transforms.ToTensor(),
   ])
 
+  # we implemented a whole family of gradually more difficult data transformations
+  # for data augmentation. They can be selected via the config file:
   transforms_dict = {
     'light_20': light,
     'med_10': med_10,
@@ -147,6 +174,10 @@ def semi_supervised_cifar10(
 
   logging.info(f"Dataset (supervised={ss_ds_len}/total={ds_size}) us_bs={us_bs} s_bs={s_bs}")
   logging.info(f"Using workers (unsupervised|supervised|test) {num_workers}")
+
+  # our data is separated in three different loaders. Supervised and usupervised
+  # data is strictly separated from the beginning. We separate the data randomly.
+  # No seed was used for training
 
   unsupervised_loader = DataLoader(ds_train,
     num_workers=num_workers[0],

@@ -1,4 +1,13 @@
-# adapted from https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py
+r"""
+vgg.py
+======
+
+This is the main vertical network of this project. We use / modified the VGG
+implementation from https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py
+
+.. autosummary::
+  modules.VGG
+"""
 import torch
 from torch import nn, Tensor
 from typing import Tuple, List
@@ -11,6 +20,13 @@ cfgs = {
 }
 
 class VGG(nn.Module):
+  r"""
+  VGG CNN Implementation with minor changes such that
+  we can extract all layers to train them individually.
+
+  Layers are trained via sidecar autoencoders.
+  The pooling layers become upstream maps.
+  """
   def __init__(self, 
     num_classes: int,
     dropout: float,

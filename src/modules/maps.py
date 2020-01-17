@@ -1,3 +1,19 @@
+r"""
+maps.py
+=======
+The term map in this project is a nn.module that maps data from one horizontal
+layer to the next. It is the abstract concept of coupling such individually 
+trained layers into one bigger (deeper) network.
+
+Many different maps are collected in this module. It one can check in the config
+yaml to see which of these maps is used in a specific training instance.
+
+.. autosummary::
+  modules.RandomMap
+  modules.SidecarMap
+  modules.ConvMap
+  modules.DecoderMap
+"""
 import torch
 from torch import nn, Tensor
 from numpy.random import permutation
@@ -9,6 +25,10 @@ from functools import reduce
 from typing import List, Callable, Tuple
 
 class RandomMap(nn.Module):
+  r"""
+  This map randomly permutes the input and maps it
+  to the output shape.
+  """
 
   requires_training: bool = False
 
@@ -39,6 +59,13 @@ class RandomMap(nn.Module):
 
 
 class SidecarMap(nn.Module):
+  r"""
+  This map takes any set of
+  non-trainable layer from a bigger main network
+  and uses it as a map function.
+
+  Mainly used for maxpool layers.
+  """
 
   requires_training: bool = False
   
@@ -51,19 +78,11 @@ class SidecarMap(nn.Module):
     return x
 
 
-
-class InterpolationMap(nn.Module):
-
-  requires_training: bool = False
-  
-  def __init__(self):
-    pass
-
-  def forward(self, x):
-    pass
-
-
 class ConvMap(nn.Module):
+  r"""
+  Trainable map that is a one layer convolution
+  to map from input to output dimension.
+  """
 
   requires_training: bool = True
 
@@ -89,6 +108,14 @@ class ConvMap(nn.Module):
 
 
 class DecoderMap(nn.Module):
+  r"""
+  This map takes the last layer of a horizontal autoencoder and
+  uses it as an upstream mapping initialization.
+  No scaling is needed since this layer has
+  the exact dimensions we need by design.
+  
+  Other than that, it is similar to ConvMap.
+  """
 
   requires_training: bool = True
 

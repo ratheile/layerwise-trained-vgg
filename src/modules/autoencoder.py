@@ -1,3 +1,22 @@
+r"""
+autoencoder.py
+==============
+
+First implementation of a horizontal (layerwise) training mechanism of a deep network.
+It is fundamentally flawed because the receptive field of this stack does not
+increase in depth and therefore it is not possible for the network to learn
+complex features in images.
+
+This happens because the upstream maps the data back to the input size of this
+autoencoder to make it stackable.
+
+Replaced by SidecarAutoencoder which trains a narrowing network that does not have
+these problems. We keep the code for reasoning / documentation of our mistakes.
+
+.. autosummary::
+  modules.Autoencoder
+  modules.SupervisedAutoencoder
+"""
 import torch
 from torch import nn, Tensor
 from torch.nn import Parameter
@@ -10,6 +29,10 @@ from .fcview import FCView
 from typing import List, Callable, Tuple
 
 class Autoencoder(nn.Module, StackableNetwork):
+  r"""
+  Implementation of an autoencoder used in our stack. This is a horizontal module.
+  It is connected to the upper layer via its upstream function.
+  """
 
   def __init__(self, color_channels: int=3, dropout: int=0.3):
     super().__init__()
@@ -57,6 +80,9 @@ class Autoencoder(nn.Module, StackableNetwork):
     )
 
   def calculate_upstream(self, x):
+    r"""
+    computes the representation of x used in the next layer
+    """
     x = self.upstream_layers(x)
     return x
 
@@ -68,6 +94,11 @@ class Autoencoder(nn.Module, StackableNetwork):
   
 
 class SupervisedAutoencoder(Autoencoder):
+  r"""
+  A supervised extension to the autoencoder class.
+  It extends autoencoder with a fully connected module linked to the autoencoder
+  bottleneck.
+  """
 
   def __init__(self, color_channels: int):
     super().__init__(color_channels)

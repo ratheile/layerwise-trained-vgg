@@ -1,3 +1,13 @@
+r"""
+configloader.py
+===============
+A yaml config loader.
+
+.. autosummary::
+  loaders.ConfigLoader
+"""
+
+
 from __future__ import annotations # for -> ConfigLoader typedef
 import yaml
 import json
@@ -9,6 +19,10 @@ import logging
 from typing import Dict, Callable
 
 class ConfigLoader(object):
+  r"""
+  This class implements different methods to load / write data from
+  and to a yaml file. It is used to serialize / load all the network hyperparameter.
+  """
 
   def from_file(self, env_path: str = 'yaml/env.yml', suppress_print=False) -> ConfigLoader:
     if os.path.isfile(env_path):

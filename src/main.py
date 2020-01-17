@@ -1,11 +1,23 @@
 r"""
-main.py
-====================================
-The core module of my example project
+Controller for simulations (:mod:`main`)
+----------------------------------------
+
+The module :mod:`main` is an executable script that controls the simulations
+(i.e., the training and testing of classification tasks).
+
+It takes an environment config and a run config.
+
+The run config contains all the hyper parameter and network options.
+the env config describes where to find the dataset (cifar10, cifar100)
+
+For more usage information, check out:
+
+.. code-block:: console
+
+  $ python3 main.py --help
+
 """
 
-
-#%%
 from networks import AutoencoderNet
 from loaders import ConfigLoader
 
@@ -18,26 +30,9 @@ import os
 
 from typing import List
 
-# r"""
-# Controller for simulations (:mod:`main`)
-# ----------------------------------------
-
-# The module :mod:`main` is an executable script that controls the simulations
-# (i.e., the training and testing of MNIST digit classification tasks).
-
-# For more usage information, check out:
-
-# .. code-block:: console
-
-#   $ python3 main.py --help
-
-# """
 
 # https://stackoverflow.com/questions/38834378/path-to-a-directory-as-argparse-argument
 def file_path(string):
-  r"""
-  test
-  """
   if os.path.isfile(string):
     return string
   else:
@@ -45,10 +40,6 @@ def file_path(string):
 
 
 if __name__ == "__main__":
-  r"""
-  Main
-  """
-    
   logging.info("----------------------------------")
   logging.info("- Welcome to BioP SeSu Lotra DNN -")
   logging.info("----------------------------------")

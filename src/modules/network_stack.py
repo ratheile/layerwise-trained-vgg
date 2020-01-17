@@ -1,3 +1,11 @@
+r"""
+network_stack.py
+================
+
+.. autosummary::
+  modules.NetworkStack
+"""
+
 import torch
 from torch import nn, Tensor
 from torch import no_grad
@@ -7,6 +15,16 @@ from .stackable_network import StackableNetwork
 from typing import List, Callable, Tuple
 
 class NetworkStack(nn.Module):
+  r"""
+  A network stack is responsible to use a set of
+  layers and maps to:
+
+  - Compute the upstream to this layer
+  - Train that one layer horizontally
+
+  The class is initialized with a reference to all the
+  previous layers
+  """
 
   def __init__(self,
     networks: List[Tuple[StackableNetwork, nn.Module]],

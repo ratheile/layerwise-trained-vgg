@@ -1,4 +1,15 @@
 
+r"""
+vgg_autoencoder.py
+==================
+
+This module contains all autoencoders required to train a
+VGG network horizontally.
+
+.. autosummary::
+  modules.SidecarAutoencoder
+  modules.SupervisedSidecarAutoencoder
+"""
 import torch
 from torch import nn, Tensor
 
@@ -89,6 +100,14 @@ decoders_dict = {
   )
 }
 class SidecarAutoencoder(nn.Module):
+  r"""
+  This autoencoder is a "sidecar" to a deeper network. It takes a slice of
+  the main network (main_network_layer) and trains this layer isolated from the
+  other parts of the main network.
+
+  Different autoencoder types are supported (A-C).
+  """
+
   def __init__(self, 
   main_network_layer: List[nn.Module], 
   img_size: int,
@@ -148,6 +167,9 @@ class SidecarAutoencoder(nn.Module):
   
 
 class SupervisedSidecarAutoencoder(SidecarAutoencoder):
+  r"""
+  The supervision extension of the sidecar autoencoder.
+  """
   def __init__(self, 
   main_network_layer: List[nn.Module], 
   img_size: int,

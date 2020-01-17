@@ -1,3 +1,11 @@
+r"""
+cfg_to_network.py
+=================
+Module to map from configuration files to classes of our network.
+
+.. autosummary::
+  networks.cfg_to_network
+"""
 import torch
 from torch import nn, Tensor 
 from torch.optim import Adam
@@ -7,7 +15,7 @@ from modules import SupervisedSidecarAutoencoder, VGG, \
   SupervisedAutoencoder
 
 from modules import RandomMap, \
-  ConvMap, DecoderMap, InterpolationMap, SidecarMap
+  ConvMap, DecoderMap, SidecarMap
 
 from modules import NetworkStack
 
@@ -27,6 +35,10 @@ dropout:float,
 kernel_size:int,
 encoder_type:int,
 num_classes:int) -> nn.Module:
+  r"""
+  helper function used in cfg_to_network to assemble a
+  SupervisedSidecarAutoencoder
+  """
   vgg_layers, channels, img_size, _ = vgg.get_trainable_modules()[index]
   return SupervisedSidecarAutoencoder(
     vgg_layers,
@@ -40,6 +52,14 @@ num_classes:int) -> nn.Module:
 
 def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
   -> List[LayerTrainingDefinition]:
+  r"""
+  This is the main network assembly function. It takes a config 
+  from a configloader (a yaml file). Assembles a network stack
+  as list of LayerTrainingDefintions.
+
+  Returns:
+    List[LayerTrainingDefinition]
+  """
 
   # params from run config
   num_layers = len(rcfg['layers'])
@@ -103,7 +123,6 @@ def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
           in_shape=uprms['in_shape'],
           out_shape=uprms['out_shape']
         ),
-        'InterpolationMap': lambda: InterpolationMap(),
         'ConvMap': lambda: ConvMap(
           in_shape=uprms['in_shape'],
           out_shape=uprms['out_shape']

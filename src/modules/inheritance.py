@@ -1,3 +1,6 @@
+r"""
+Experimental class not used in the final product
+"""
 from torch import nn
 
 class StackableNetwork(object):

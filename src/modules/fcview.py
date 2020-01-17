@@ -1,6 +1,15 @@
+r"""
+fcview.py
+=========
+.. autosummary::
+  modules.FCView
+"""
 from torch import nn
 
 class FCView(nn.Module):
+    r"""
+    Pytorch view abstraction as nn.module
+    """
     def __init__(self):
         super().__init__()
 
