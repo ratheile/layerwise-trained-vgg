@@ -71,6 +71,7 @@ class AutoencoderNet():
     self.test_every_n_epochs = rcfg['test_every_n_epochs']
     self.pred_loss_weight = rcfg['pred_loss_weight']
     self.waves = rcfg['waves']
+    self.num_classes = gcfg['datasets/{}/num_classes'.format(rcfg['dataset'])]
 
     color_channels = rcfg['color_channels']
 
@@ -474,15 +475,13 @@ class AutoencoderNet():
       if config.stack is not None: config.stack.eval()
 
     with torch.no_grad():
-      # TODO: Num classes should be a yaml param
-      num_classes = 10
       num_batches = len(self.test_loader)
       num_layers = len(configs)
 
       for data in self.test_loader:
         img, label = data[0], data[1]
         batch_size = len(label) # last batch might be smaller than regular batch size!
-        layer_predicted = torch.zeros(batch_size, num_classes).to(self.device)
+        layer_predicted = torch.zeros(batch_size, self.num_classes).to(self.device)
         for id_c, config in enumerate(configs):
           
           # copy all vars to device and calculate the topmost stack representation
