@@ -165,11 +165,12 @@ class AutoencoderNet():
     autoencoder network block. Therefore it has its own training method.
     """
 
-    #TODO: check if still necessary self.model.train()
-
     tot_t_dataload = 0
     tot_t_loss = 0
     tot_t_optim = 0
+
+    # switch to train mode (dropout)
+    config.model.train()
 
     # _s means supervised _us unsupervised
     iter_us = iter(self.unsupvised_loader)
@@ -239,6 +240,9 @@ class AutoencoderNet():
     test_loss = 0
     test_acc = 0
 
+    # switch to eval mode (dropout)
+    config.model.eval()
+
     with torch.no_grad():
       img: Tensor = None
       labels: Tensor = None
@@ -286,6 +290,9 @@ class AutoencoderNet():
     tot_t_upstream = 0
     tot_t_loss = 0
     tot_t_optim = 0
+    
+    # switch to train mode (dropout)
+    config.model.train()
 
     # _s means supervised _us unsupervised
     iter_us = iter(self.unsupvised_loader)
@@ -394,6 +401,9 @@ class AutoencoderNet():
     test_loss = 0
     test_acc = 0
 
+    # switch to eval mode (dropout)
+    config.model.eval()
+
     # execution times
     t_start = time.time_ns()
 
@@ -458,6 +468,10 @@ class AutoencoderNet():
     test_acc = 0
     test_norm = 0
 
+    for config in configs:
+      if config.model is not None: config.model.eval()
+      if config.stack is not None: config.stack.eval()
+
     with torch.no_grad():
       # TODO: Num classes should be a yaml param
       num_classes = 10
@@ -494,6 +508,10 @@ class AutoencoderNet():
       )
     )
     self.writer.add_scalar('accuracy_total/maj_vote', test_acc, global_step=global_epoch)
+
+    for config in configs:
+      if config.model is not None: config.model.train()
+      if config.stack is not None: config.stack.train()
 
 
   def wave_train_test(self):
