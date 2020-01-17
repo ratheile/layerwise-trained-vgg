@@ -74,7 +74,8 @@ decoders_dict = {
     nn.Dropout(dropout),
 
     nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
-    nn.BatchNorm2d(num_features=in_channels)
+    nn.BatchNorm2d(num_features=in_channels),
+    nn.Sigmoid()
   ),
 
   'B': lambda dropout, num_channels, channel_mult, c2d_args, in_channels: nn.Sequential(
@@ -85,7 +86,8 @@ decoders_dict = {
     nn.Dropout(dropout),
 
     nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
-    nn.BatchNorm2d(num_features=in_channels)
+    nn.BatchNorm2d(num_features=in_channels),
+    nn.Sigmoid()
   ),
 
   'C': lambda dropout, num_channels, channel_mult, c2d_args, in_channels: nn.Sequential(
@@ -96,7 +98,8 @@ decoders_dict = {
     nn.Dropout(dropout),
 
     nn.Conv2d(in_channels=num_channels, out_channels=in_channels, **c2d_args),
-    nn.BatchNorm2d(num_features=in_channels)
+    nn.BatchNorm2d(num_features=in_channels),
+    nn.Sigmoid()
   )
 }
 class SidecarAutoencoder(nn.Module):
