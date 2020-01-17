@@ -1,28 +1,48 @@
-learning_rate: 0.02
 weight_decay: 0.00001 # ADAM decay
 color_channels: 3
 supervised_ratio: 0.1
 augmentation: True
 batch_size: 128
 test_every_n_epochs: 10
-pred_loss_weight: 0.3
+
+train_mode: 'wave' # wave, sequential
+waves: 25
+
+pred_loss_weight: 0.9 # "trainable" or  number (0,1)"
+
+# us*(1-a)+(s+p)*a+r
+# (us+s)*(1-a)+p*a+r
+# (us+10*s)*(1-a)+p*a+r
+ae_loss_function: (us+s)*(1-a)+p*a+r
+
+# VGG not used in this config
+vgg_version: A
+vgg_dropout: 0.5
+vgg_batch_norm: True
+vgg_init_weights: True
+
+# Persistence path for later analysis
+model_path: trained_models/autoencoder
 
 # must be configured in env.yml 
 dataset: cifar10 # Supports mnist|cifar10
+dataset_transform: heavy_10
+
 decoding_criterion: MSELoss # Supports: MSELoss
-prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
+prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLos
 
 # pretraining_store must be a path !
 # pretraining_load must be a file name !
 layers:
-  - num_epoch: 50
+  - num_epoch: 25
     dropout_rate: 0.3
+    learning_rate: 0.001
     model: AE # VGG n-th layer
     optimizer: Adam
     # pretraining_load: trained_models/cifar10/layer_0_stack.pickle
     # pretraining_store: null
     pretraining_load: null 
-    pretraining_store: trained_models/cifar10 
+    pretraining_store: False
 
     # Supports RandomMap | ConvMap | DecoderMap
     upstream: DecoderMap
@@ -30,15 +50,38 @@ layers:
       in_shape: !!python/tuple [24,16,16]
       out_shape: !!python/tuple [3,32,32]
 
-
-  - num_epoch: 50
+  - num_epoch: 25
     dropout_rate: 0.3
+    learning_rate: 0.001
     optimizer: Adam
     model: AE # VGG n-th layer
     pretraining_load:  null
-    pretraining_store: trained_models/cifar10 
-    upstream: null
+    pretraining_store: False
+    upstream: DecoderMap
+    upstream_params:
+      in_shape: !!python/tuple [24,16,16]
+      out_shape: !!python/tuple [3,32,32] 
+      
+  - num_epoch: 25
+    dropout_rate: 0.3
+    learning_rate: 0.001
+    optimizer: Adam
+    model: AE # VGG n-th layer
+    pretraining_load:  null
+    pretraining_store: False
+    upstream: DecoderMap
     upstream_params:
       in_shape: !!python/tuple [24,16,16]
       out_shape: !!python/tuple [3,32,32]
 
+  - num_epoch: 25
+    dropout_rate: 0.3
+    learning_rate: 0.001
+    optimizer: Adam
+    model: AE # VGG n-th layer
+    pretraining_load:  null
+    pretraining_store: False
+    upstream: null
+    upstream_params:
+      in_shape: !!python/tuple [24,16,16]
+      out_shape: !!python/tuple [3,32,32]
