@@ -20,8 +20,8 @@ Modify / create your own environment file. Check out the [template](src/yaml/env
 # How to Train
 We use yaml files to configure our network (collected in `src/yaml`). Attach them to main with the respective parameters:
 
-  - Environment Config `--env` contains all parameters to run the programs on a specific computer (paths etc.)
-  - Run Config `--cfg` contains all parameters to run the network (hyperparameters).
+  - Environment Config `--env` contains all parameters to run the programs on a specific computer (paths etc) [Examples](src/yaml/env).
+  - Run Config `--cfg` contains all parameters to run the network (hyperparameters) [Examples](src/yaml/nets).
 
 Run configs are platform agnostic and should work if the environment is configured properly.
 
