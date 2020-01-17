@@ -7,6 +7,11 @@ A Layerwise Trained Deep Neural Network
 conda env create -f environment.yml
 ```
 
+Download the datasets (example path in command):
+```
+python src/download_datasets.py --path="/home/user1/datasets/test"
+```
+
 Modify / create your own environment file. Check out the [template](src/yaml/env/env_template.yml).
 
 
