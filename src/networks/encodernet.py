@@ -574,7 +574,7 @@ class AutoencoderNet():
           total_epochs += 1
           if total_epochs % self.test_every_n_epochs == 0:
             if config.layer_type == LayerType.Stack:
-              self.test(epoch, config=configfrom visualizations import CNNLayerVisualization, global_epoch=total_epochs)
+              self.test(epoch, config=config, global_epoch=total_epochs)
             elif config.layer_type == LayerType.VGGlinear:
               self.test_vgg_classifier(epoch, config=config, global_epoch=total_epochs)
         # end epoch loop
@@ -591,6 +591,9 @@ class AutoencoderNet():
         logging.info('### Use pretrained tensors for {} ###'.format(id_c))
       
   def visualize(self, epoch = 0): 
+    r"""
+    Visualize gradients generated with color guided back propagation 
+    """
   
     logging.info("## visualize layer ##") 
     

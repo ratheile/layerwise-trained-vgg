@@ -102,3 +102,6 @@ We tried to keep the code as clean and understandable as possible
 Additionally, we generated a small [documentation](scaling_spoon.pdf) to get you started quickly.
 
 It is generated with the `sphinx` framework.
+
+# Experiments
+We added yaml files for the best networks to [nets](src/yaml/nets)
