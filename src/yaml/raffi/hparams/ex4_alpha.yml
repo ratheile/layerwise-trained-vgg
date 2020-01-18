@@ -1,0 +1,4 @@
+experiment_name: alpha
+yml_output_folder: results/nets/vgg_alpha
+run_cfg:
+  pred_loss_weight: [0.1,0.3,0.5,0.7,0.8,0.9]

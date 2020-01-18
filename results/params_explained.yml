@@ -30,7 +30,7 @@ dataset_transform: heavy_10
 decoding_criterion: MSELoss # Supports: MSELoss
 prediction_criterion: CrossEntropyLoss # Supports: CrossEntropyLoss
 
-# pretraining_store must be a path !
+# pretraining_store must true, false!
 # pretraining_load must be a file name !
 layers:
 
