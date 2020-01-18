@@ -1,0 +1,17 @@
+logging:  INFO
+device: cuda
+dataset_workers: !!python/tuple [6,6,2]
+# dataset_workers: !!python/tuple [0,0,0]
+datasets:
+  mnist: 
+    img_size: 28
+    path: '/cluster/home/koktay/Project/mnist'
+    num_classes: 10
+  cifar10:
+    path: '/cluster/home/koktay/Project/cifar10'
+    img_size: 32
+    num_classes: 10
+  cifar100:
+    path: '/cluster/home/koktay/Project/cifar100'
+    img_size: 32
+    num_classes: 100
