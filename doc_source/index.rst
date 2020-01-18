@@ -24,6 +24,12 @@ Indices and tables
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: loaders.cifar100
+    :exclude-members: randperm
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: loaders.configloader
     :exclude-members: 
     :members:

@@ -99,7 +99,7 @@ The file has to be in `model_path`. This is also the folder where layers are sto
 
 # Documentation
 We tried to keep the code as clean and understandable as possible
-Additionally, we generated a small [documentation](scaling_spoon.pdf) to get you started quickly.
+Additionally, we generated a small [documentation](documentation.pdf) to get you started quickly.
 
 It is generated with the `sphinx` framework.
 

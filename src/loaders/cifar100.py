@@ -2,12 +2,13 @@ r"""
 cifar100.py
 ============
 
-Dataset wrappers to use cifar10 in a semi-supervised fashion.
+Dataset wrappers to use cifar100 in a semi-supervised fashion.
 
 .. autosummary::
   loaders.cifar100.CifarSubsetSampler
   loaders.cifar100.semi_supervised_cifar100
 """
+
 from torch import Tensor, randperm
 from torchvision.datasets import CIFAR100
 from torch.utils.data import DataLoader, Sampler
@@ -53,7 +54,7 @@ def semi_supervised_cifar100(
   * Training Set Dataloader (Supervised Dataset)
   * Training Set Dataloader (Unsupervised Dataset)
 
-  It wraps the pytorch cifar10 dataset class.
+  It wraps the pytorch cifar100 dataset class.
   """
 
   light = transforms.Compose([
