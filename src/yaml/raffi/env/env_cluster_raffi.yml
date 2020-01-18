@@ -11,3 +11,7 @@ datasets:
     path: '/cluster/home/ratheile/datasets/cifar10'
     img_size: 32
     num_classes: 10
+  cifar100:
+    path: '/cluster/home/ratheile/datasets/cifar100'
+    img_size: 32
+    num_classes: 100

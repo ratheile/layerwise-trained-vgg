@@ -1,0 +1,108 @@
+ae_loss_function: us*(1-a)+(s+p)*a+r
+augmentation: false
+batch_size: 128
+color_channels: 3
+dataset: cifar100
+dataset_transform: heavy_10
+decoding_criterion: MSELoss
+layers:
+- dropout_rate: 0.1
+  encoder_type: C
+  kernel_size: 3
+  learning_rate: 0.0008
+  model: VGGn
+  num_epoch: 50
+  optimizer: Adam
+  pretraining_load: null
+  pretraining_store: false
+  upstream_params: null
+- dropout_rate: 0.1
+  encoder_type: C
+  kernel_size: 3
+  learning_rate: 0.0007
+  model: VGGn
+  num_epoch: 50
+  optimizer: Adam
+  pretraining_load: null
+  pretraining_store: false
+  upstream_params: null
+- dropout_rate: 0.1
+  encoder_type: C
+  kernel_size: 3
+  learning_rate: 0.0006
+  model: VGGn
+  num_epoch: 50
+  optimizer: Adam
+  pretraining_load: null
+  pretraining_store: false
+  upstream_params: null
+- dropout_rate: 0.1
+  encoder_type: C
+  kernel_size: 3
+  learning_rate: 0.00051
+  model: VGGn
+  num_epoch: 50
+  optimizer: Adam
+  pretraining_load: null
+  pretraining_store: false
+  upstream_params: null
+- dropout_rate: 0.1
+  encoder_type: C
+  kernel_size: 3
+  learning_rate: 0.00042
+  model: VGGn
+  num_epoch: 50
+  optimizer: Adam
+  pretraining_load: null
+  pretraining_store: false
+  upstream_params: null
+- dropout_rate: 0.1
+  encoder_type: C
+  kernel_size: 3
+  learning_rate: 0.00033
+  model: VGGn
+  num_epoch: 50
+  optimizer: Adam
+  pretraining_load: null
+  pretraining_store: false
+  upstream_params: null
+- dropout_rate: 0.1
+  encoder_type: C
+  kernel_size: 3
+  learning_rate: 0.00024
+  model: VGGn
+  num_epoch: 50
+  optimizer: Adam
+  pretraining_load: null
+  pretraining_store: false
+  upstream_params: null
+- dropout_rate: 0.1
+  encoder_type: C
+  kernel_size: 3
+  learning_rate: 0.00016
+  model: VGGn
+  num_epoch: 50
+  optimizer: Adam
+  pretraining_load: null
+  pretraining_store: false
+  upstream_params: null
+- dropout_rate: 0.1
+  learning_rate: 0.00016
+  model: VGGlinear
+  num_epoch: 50
+  optimizer: Adam
+  pretraining_load: null
+  pretraining_store: false
+  upstream_params: null
+model_path: trained_models/ex1_base50waves_cifar100
+pred_loss_weight: 1.0
+prediction_criterion: CrossEntropyLoss
+supervised_ratio: 0.984375
+test_every_n_epochs: 1
+train_mode: wave
+vgg_batch_norm: true
+vgg_dropout: 0.1
+vgg_init_weights: true
+vgg_version: A
+waves: 50
+weight_decay: 0.0
