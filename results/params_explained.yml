@@ -8,6 +8,7 @@ test_every_n_epochs: 1
 train_mode: 'wave' # wave, sequential
 waves: 35
 
+# this is alpha (a) in ae_loss_function
 pred_loss_weight: 0.9 # "trainable" or  number (0,1)"
 
 # us*(1-a)+(s+p)*a+r
