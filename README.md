@@ -21,7 +21,7 @@ Modify / create your own environment file. Check out the [template](src/yaml/env
 We use yaml files to configure our network (collected in `src/yaml`). Attach them to main with the respective parameters:
 
   - Environment Config `--env` contains all parameters to run the programs on a specific computer (paths etc) [Examples](src/yaml/env).
-  - Run Config `--cfg` contains all parameters to run the network (hyperparameters) [Examples](src/yaml/nets).
+  - Run Config `--cfg` contains all parameters to run the network (hyperparameters) [Examples](results/nets).
 
 Run configs are platform agnostic and should work if the environment is configured properly.
 
@@ -83,10 +83,10 @@ for i in src/yaml/raffi/nets_gen/final/*;do ./bsub_raffi.sh "$i";done
 All results are collected in tensorboard
 
 ```
-tensorboard --logdir=runs
+tensorboard --logdir=<directory>
 ```
 
-shows the plots.
+shows the plots on a web-interface.
 
 ## For layers:
 (`keys` are from the cfg.yml)
@@ -103,5 +103,17 @@ Additionally, we generated a small [documentation](scaling_spoon.pdf) to get you
 
 It is generated with the `sphinx` framework.
 
-# Experiments
-We added yaml files for the best networks to [nets](src/yaml/nets)
+# Reproducable Experiments
+We added yaml files for the experiments mentioned in the report to [nets](results/nets)
+
+And recordings of the training can be verified with thensorboard
+
+```
+# from main directory
+conda activate deeplearning
+tensorboard --logdir=results/tensorboard
+```
+
+In Tensorboard you can go to "Text" to see the respective configurations for each run.
+
+The meaning/choices of the yaml parameters are explained in this [file](results/params_explained.yml).
