@@ -1,0 +1,10 @@
+experiment_name: ex1
+yml_output_folder: src/yaml/kaan/nets_gen/experiments_1
+run_cfg:
+  pred_loss_weight: [0.9, 0.8, 0.7]
+  #dataset: ['cifar100']
+  #supervised_ratio: [0.2]
+  #train_mode: ['sequential']
+  #supervised_ratio: [0.1, 0.2, 0.4]
+  #layers/0,1,2,3,4,5,6,7/dropout_rate: [0.0, 0.2, 0.3, 0.4]
+  #layers/0,1,2,3,4,5,6,7/encoder_type: ['A', 'B']
