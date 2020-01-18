@@ -21,6 +21,10 @@ from modules import NetworkStack
 
 from loaders import ConfigLoader
 
+show_summary = False
+if show_summary:
+  from torchsummary import summary
+
 from .layer_training_def import LayerTrainingDefinition, LayerType
 
 from typing import List, IO
@@ -40,7 +44,7 @@ num_classes:int) -> nn.Module:
   SupervisedSidecarAutoencoder
   """
   vgg_layers, channels, img_size, _ = vgg.get_trainable_modules()[index]
-  return SupervisedSidecarAutoencoder(
+  sse = SupervisedSidecarAutoencoder(
     vgg_layers,
     img_size,
     channels,
@@ -49,6 +53,10 @@ num_classes:int) -> nn.Module:
     encoder_type,
     num_classes)
 
+  # For debugging purposes:
+  if show_summary:
+    summary(sse.to('cuda'), (channels[0], img_size, img_size))
+  return sse
 
 def cfg_to_network(gcfg: ConfigLoader, rcfg: ConfigLoader) \
   -> List[LayerTrainingDefinition]:
