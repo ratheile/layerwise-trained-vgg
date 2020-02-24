@@ -129,25 +129,25 @@ class SidecarAutoencoder(nn.Module):
 
     channel_mult = 2
     in_channels = channels[0]
-    num_channels = channels[-1]
+    out_channels = channels[-1]
 
     self.encoder_type = encoder_type
     self.upstream_layers = nn.Sequential(*main_network_layer)
 
     # First dropout layer is for upstream training, but should not be there in upstream processing
     self.encoder = encoders_dict[encoder_type](
-      dropout, num_channels,
+      dropout, out_channels,
       channel_mult, c2d_args
     )
 
     self.decoder = decoders_dict[encoder_type](
-      dropout, num_channels,
+      dropout, out_channels,
       channel_mult, c2d_args, in_channels
     )
 
     self.img_size = img_size
     self.channel_mult = channel_mult
-    self.num_channels = num_channels
+    self.num_channels = out_channels
 
   def bottleneck_size(self) -> int:
     if self.encoder_type == 'A':
